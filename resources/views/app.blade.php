@@ -38,7 +38,15 @@
     <meta name="description" content="{{ $__desc }}">
     <meta name="robots" content="{{ $__noindex ? 'noindex, nofollow' : 'index, follow' }}">
     <link rel="canonical" href="{{ $__canonical }}">
+    @if ($__fav)
     <link rel="icon" href="{{ $__favUrl }}">
+    @else
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    @endif
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ $__school }}">
     <meta property="og:locale" content="id_ID">

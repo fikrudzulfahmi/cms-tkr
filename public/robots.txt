@@ -2,4 +2,4 @@ User-agent: *
 Disallow: /admin
 Disallow: /login
 
-Sitemap: https://cms-tsm.almuhsinblitar.my.id/sitemap.xml
+Sitemap: https://cms-tkr.almuhsinblitar.my.id/sitemap.xml

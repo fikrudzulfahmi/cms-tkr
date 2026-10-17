@@ -18,6 +18,19 @@ return Application::configure(basePath: dirname(__DIR__))
         // untuk mem-bypass rate limit dan memalsukan kunjungan unik.
         // IP asli diambil dari CF-Connecting-IP (diisi Cloudflare) oleh ClientIp.
         $middleware->trustProxies(at: []);
+        // Tolak Host header palsu (mencegah host-header injection pada redirect/URL).
+        // Diizinkan: host dari APP_URL, localhost, dan IP LAN privat.
+        $middleware->trustHosts(at: function () {
+            $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+            $hosts = ['^localhost$', '^127\\.0\\.0\\.1$', '^192\\.168\\.\\d{1,3}\\.\\d{1,3}$'];
+            if ($appHost) {
+                $hosts[] = '^'.preg_quote($appHost, '/').'$';
+            }
+            foreach (array_filter(array_map('trim', explode(',', (string) env('TRUSTED_HOSTS', '')))) as $h) {
+                $hosts[] = '^'.preg_quote($h, '/').'$';
+            }
+            return $hosts;
+        }, subdomains: false);
         $middleware->prepend(\App\Http\Middleware\ClientIp::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->web(append: [

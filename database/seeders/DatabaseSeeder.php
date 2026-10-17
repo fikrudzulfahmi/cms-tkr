@@ -17,12 +17,22 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Password admin tidak boleh ditulis di kode. Ambil dari ADMIN_PASSWORD (.env),
+        // atau buat acak dan tulis ke storage/app/admin-password.txt (izin 600).
+        $adminPassword = (string) env('ADMIN_PASSWORD', '');
+        if ($adminPassword === '') {
+            $adminPassword = \Illuminate\Support\Str::password(16, symbols: false);
+            $file = storage_path('app/admin-password.txt');
+            file_put_contents($file, $adminPassword.PHP_EOL);
+            @chmod($file, 0600);
+        }
+
         DB::table('users')->insert([
             'name' => 'Administrator',
             'email' => 'admin@tkr.sch.id',
             'email_verified_at' => now(),
             'role' => 'admin',
-            'password' => Hash::make('Admin#TKR2026'),
+            'password' => Hash::make($adminPassword),
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
