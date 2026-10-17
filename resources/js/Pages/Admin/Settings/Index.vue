@@ -48,6 +48,8 @@ const form = useForm({
   spmb_open: props.settings?.spmb_open === '1',
   spmb_info: props.settings?.spmb_info || '',
   spmb_url: props.settings?.spmb_url || '',
+  spmb_year: props.settings?.spmb_year || '',
+  spmb_deadline: props.settings?.spmb_deadline || '',
   footer_text: props.settings?.footer_text || '',
   department_name: props.settings?.department_name || '',
   instagram_url: props.settings?.instagram_url || '',
@@ -361,6 +363,16 @@ onMounted(() => {
               <p v-if="form.errors.spmb_url" class="text-xs text-red-600 mt-1">{{ form.errors.spmb_url }}</p>
               <p v-else-if="!form.spmb_url" class="text-xs text-amber-600 mt-1">Belum diisi: tombol "Daftar SPMB" hanya mengarah ke section SPMB di halaman depan.</p>
               <a v-else :href="form.spmb_url" target="_blank" rel="noopener" class="text-xs text-blue-700 hover:underline mt-1 inline-block">Uji buka link →</a>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-6">
+              <div>
+                <label class="form-label">Tahun Ajaran SPMB</label>
+                <input v-model="form.spmb_year" type="text" placeholder="2026/2027" class="form-input" />
+              </div>
+              <div>
+                <label class="form-label">Tanggal Penutupan</label>
+                <input v-model="form.spmb_deadline" type="text" placeholder="30 Juni 2026" class="form-input" />
+              </div>
             </div>
             <div class="grid sm:grid-cols-3 gap-6 items-start">
               <label class="flex items-center gap-3 text-sm font-semibold text-slate-700 cursor-pointer sm:pt-7">

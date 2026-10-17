@@ -14,7 +14,7 @@ class HandleInertiaRequests extends Middleware
         'hero_title', 'hero_subtitle', 'hero_bg', 'about_text', 'about_image', 'footer_text',
         'address', 'phone', 'whatsapp', 'email', 'maps_embed',
         'instagram_url', 'facebook_url', 'youtube_url', 'tiktok_url',
-        'spmb_info', 'spmb_open', 'spmb_url',
+        'spmb_info', 'spmb_open', 'spmb_url', 'spmb_year', 'spmb_deadline',
         'stat_students', 'stat_graduates', 'stat_absorption',
         'profile_head_name', 'profile_head_position', 'profile_head_photo', 'profile_speech',
         'profile_history', 'profile_vision', 'profile_mission', 'profile_structure_image',

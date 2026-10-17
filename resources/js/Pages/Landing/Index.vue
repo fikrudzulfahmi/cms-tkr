@@ -30,10 +30,10 @@ const s = computed(() => page.props.settings || {})
 const school = computed(() => s.value.school_name || CONFIG.namaSmk)
 
 const title = computed(() => `Jurusan Teknik Kendaraan Ringan — ${school.value}`)
-const metaDesc = computed(() => `Jurusan Teknik Kendaraan Ringan ${school.value}: belajar engine, EFI & diagnosis OBD, chassis, pemindah tenaga, kelistrikan, hingga kendaraan listrik. SPMB ${CONFIG.tahunAjaran} dibuka.`)
+const metaDesc = computed(() => `Jurusan Teknik Kendaraan Ringan ${school.value}: belajar engine, EFI & diagnosis OBD, chassis, pemindah tenaga, kelistrikan, hingga kendaraan listrik. SPMB ${tahun.value} dibuka.`)
 
-const tahun = CONFIG.tahunAjaran
-const tanggalTutup = CONFIG.tanggalTutup
+const tahun = computed(() => s.value.spmb_year || CONFIG.tahunAjaran)
+const tanggalTutup = computed(() => s.value.spmb_deadline || CONFIG.tanggalTutup)
 
 /* ---------- navigasi ---------- */
 const navLinks = [
