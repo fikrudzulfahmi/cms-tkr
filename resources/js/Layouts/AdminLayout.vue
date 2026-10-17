@@ -77,7 +77,7 @@ const menuGroups = computed(() =>
     <aside :class="['fixed inset-y-0 left-0 z-30 w-64 grid-dark border-r border-accent/20 flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto', sidebarOpen ? 'translate-x-0' : '-translate-x-full']">
       <!-- Logo -->
       <div class="flex items-center gap-3 px-5 py-5 border-b border-accent/20">
-        <div class="w-10 h-10 rounded-full border border-accent/45 flex items-center justify-center text-accent font-mono text-[11px] tracking-wider">TKR</div>
+        <div class="w-10 h-10 rounded-xl border border-accent/45 flex items-center justify-center text-accent font-mono text-[11px] tracking-wider">TKR</div>
         <div>
           <div class="font-display text-white font-bold text-sm leading-tight">Teknik Kendaraan Ringan</div>
           <div class="font-mono text-[11px] tracking-wider uppercase text-accent">Panel Kendali</div>
@@ -90,7 +90,7 @@ const menuGroups = computed(() =>
           <div v-if="group.label" class="font-mono text-on-navy-subtle text-[11px] uppercase tracking-[2px] px-3 mb-2">{{ group.label }}</div>
           <div class="space-y-0.5">
             <Link v-for="item in group.items" :key="item.href" :href="item.href" @click="sidebarOpen = false"
-              :class="['flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-semibold transition-all', isActive(item) ? 'bg-accent text-navy' : 'text-on-navy-muted hover:bg-white/5 hover:text-white']">
+              :class="['flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all', isActive(item) ? 'bg-accent text-navy' : 'text-on-navy-muted hover:bg-white/5 hover:text-white']">
               <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" :d="item.icon"/>
               </svg>
@@ -110,7 +110,7 @@ const menuGroups = computed(() =>
             <div class="font-mono text-on-navy-subtle text-[11px] uppercase tracking-wider">{{ user?.role }}</div>
           </div>
         </div>
-        <button @click="logout" class="w-full flex items-center gap-2 px-3 py-2 rounded-full border border-accent/30 text-on-navy-muted hover:border-accent hover:text-white text-sm transition">
+        <button @click="logout" class="w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-accent/30 text-on-navy-muted hover:border-accent hover:text-white text-sm transition">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
           Keluar
         </button>
