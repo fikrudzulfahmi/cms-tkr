@@ -1,0 +1,164 @@
+<?php
+namespace App\Http\Controllers\Admin;
+use App\Http\Controllers\Controller;
+use App\Models\Achievement;
+use App\Models\Category;
+use App\Models\Competency;
+use App\Models\ContactMessage;
+use App\Models\Facility;
+use App\Models\Gallery;
+use App\Models\Partner;
+use App\Models\Program;
+use App\Models\Slider;
+use App\Models\Teacher;
+use App\Models\Testimonial;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use App\Support\Slug;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+
+class ContentController extends Controller
+{
+    /** Aturan baku upload gambar: tolak SVG/HTML/arsip, batasi 5 MB. */
+    /** Ikon yang tersedia di halaman publik (resources/js/lib/site.js). */
+    public const ICONS = ['wrench-screwdriver', 'bolt', 'cpu-chip', 'shield-check', 'building-storefront', 'briefcase', 'document-check', 'users'];
+
+    private const IMAGE_RULE = 'nullable|image|mimes:jpg,jpeg,png,webp,avif|max:5120';
+
+    // Generic store/update/destroy helpers
+    private function storeModel($model, Request $request, array $rules, array $imageFields = [])
+    {
+        foreach ($imageFields as $field) $rules[$field] = self::IMAGE_RULE;
+
+        $data = $request->validate($rules);
+        foreach ($imageFields as $field) unset($data[$field]);
+        foreach ($imageFields as $field) {
+            if ($request->hasFile($field)) {
+                $data[$field] = $request->file($field)->store('content', 'public');
+            }
+        }
+        $model::create($this->withDefaults($data));
+        return back()->with('success', 'Data berhasil ditambahkan!');
+    }
+
+    private function updateModel($instance, Request $request, array $rules, array $imageFields = [])
+    {
+        foreach ($imageFields as $field) $rules[$field] = self::IMAGE_RULE;
+
+        $data = $request->validate($rules);
+        foreach ($imageFields as $field) unset($data[$field]);
+        foreach ($imageFields as $field) {
+            if ($request->hasFile($field)) {
+                $this->dropFile($instance->{$field});
+                $data[$field] = $request->file($field)->store('content', 'public');
+            }
+        }
+        // "Hapus gambar": kosongkan berkas tanpa harus mengunggah pengganti.
+        foreach ($imageFields as $field) {
+            if ($request->boolean('remove_'.$field) && ! $request->hasFile($field) && $instance->{$field}) {
+                $this->dropFile($instance->{$field});
+                $data[$field] = null;
+            }
+        }
+        $instance->update($this->withDefaults($data));
+        return back()->with('success', 'Data berhasil diperbarui!');
+    }
+
+    /** Kolom NOT NULL tidak boleh dikirim null: isi default yang wajar. */
+    private function withDefaults(array $data): array
+    {
+        if (array_key_exists('sort_order', $data)) $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
+        if (array_key_exists('quantity', $data)) $data['quantity'] = ($data['quantity'] === null || $data['quantity'] === '') ? null : (int) $data['quantity'];
+        if (array_key_exists('is_active', $data)) $data['is_active'] = $data['is_active'] === null ? true : (bool) $data['is_active'];
+
+        return $data;
+    }
+
+    /** Terapkan centang "hapus file" pada model yang tidak memakai updateModel(). */
+    private function clearRemovedFile(Request $request, $instance, array $fields): array
+    {
+        $clear = [];
+        foreach ($fields as $field) {
+            if ($request->boolean('remove_'.$field) && ! $request->hasFile($field) && $instance->{$field}) {
+                $this->dropFile($instance->{$field});
+                $clear[$field] = null;
+            }
+        }
+
+        return $clear;
+    }
+
+    /** Hapus file lama di disk publik supaya tidak menumpuk jadi sampah. */
+    private function dropFile(?string $path): void
+    {
+        if ($path && !str_starts_with($path, 'dummy/') && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
+    // --- Sliders ---
+    public function sliders() { return Inertia::render('Admin/Generic/Index', ['title'=>'Slider Hero','routeName'=>'slider','items'=>Slider::orderBy('sort_order')->get(),'fields'=>[['name'=>'title','label'=>'Judul','type'=>'text'],['name'=>'subtitle','label'=>'Subjudul','type'=>'textarea'],['name'=>'button_text','label'=>'Teks Tombol','type'=>'text'],['name'=>'button_url','label'=>'URL Tombol','type'=>'text'],['name'=>'image','label'=>'Gambar','type'=>'file'],['name'=>'sort_order','label'=>'Urutan','type'=>'number','default'=>0],['name'=>'is_active','label'=>'Aktif (1/0)','type'=>'select','options'=>['1','0'],'default'=>'1']]]); }
+    public function slidersStore(Request $r) { return $this->storeModel(Slider::class, $r, ['title'=>'nullable|string|max:255','subtitle'=>'nullable|string|max:255','button_text'=>'nullable|string|max:100','button_url'=>['nullable','string','max:255','regex:~^(https?://|/|\#)~i'],'sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['image']); }
+    public function slidersUpdate(Slider $slider, Request $r) { return $this->updateModel($slider, $r, ['title'=>'nullable|string|max:255','subtitle'=>'nullable|string|max:255','button_text'=>'nullable|string|max:100','button_url'=>['nullable','string','max:255','regex:~^(https?://|/|\#)~i'],'sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['image']); }
+    public function slidersDestroy(Slider $slider) { $this->dropFile($slider->image); $slider->delete(); return back()->with('success','Slider dihapus.'); }
+
+    // --- Competencies ---
+    public function competencies() { return Inertia::render('Admin/Generic/Index', ['title'=>'Kompetensi','routeName'=>'kompetensi','publicUrl'=>'/kompetensi','items'=>Competency::orderBy('sort_order')->get(),'fields'=>[['name'=>'title','label'=>'Judul','type'=>'text'],['name'=>'icon','label'=>'Ikon','type'=>'select','options'=>self::ICONS,'default'=>'wrench-screwdriver'],['name'=>'short_description','label'=>'Deskripsi Singkat','type'=>'textarea','hint'=>'Tampil di kartu Beranda dan /kompetensi.'],['name'=>'description','label'=>'Deskripsi Lengkap','type'=>'textarea','hint'=>'Isi halaman detail /kompetensi/{judul}. Pisahkan paragraf dengan baris kosong.'],['name'=>'image','label'=>'Gambar','type'=>'file'],['name'=>'sort_order','label'=>'Urutan','type'=>'number','default'=>0],['name'=>'is_active','label'=>'Aktif (1/0)','type'=>'select','options'=>['1','0'],'default'=>'1']]]); }
+    public function competenciesStore(Request $r) { $d=$r->validate(['title'=>'required|string|max:255','icon'=>['nullable','in:'.implode(',', self::ICONS)],'short_description'=>'nullable|string|max:500','description'=>'nullable|string','image'=>self::IMAGE_RULE,'sort_order'=>'nullable|integer','is_active'=>'nullable|boolean']); $d['slug']=Slug::unique('competencies', $d['title']); unset($d['image']); if($r->hasFile('image'))$d['image']=$r->file('image')->store('content','public'); Competency::create($this->withDefaults($d)); return back()->with('success','Kompetensi ditambahkan!'); }
+    public function competenciesUpdate(Competency $competency, Request $r) { $d=$r->validate(['title'=>'required|string|max:255','icon'=>['nullable','in:'.implode(',', self::ICONS)],'short_description'=>'nullable|string|max:500','description'=>'nullable|string','image'=>self::IMAGE_RULE,'sort_order'=>'nullable|integer','is_active'=>'nullable|boolean']); $d['slug']=Slug::unique('competencies', $d['title'], $competency->id); unset($d['image']); if($r->hasFile('image')){ $this->dropFile($competency->image); $d['image']=$r->file('image')->store('content','public'); } $d = array_merge($d, $this->clearRemovedFile($r, $competency, ['image'])); $competency->update($this->withDefaults($d)); return back()->with('success','Kompetensi diperbarui!'); }
+    public function competenciesDestroy(Competency $competency) { $this->dropFile($competency->image); $competency->delete(); return back()->with('success','Data dihapus.'); }
+
+    // --- Programs ---
+    public function programs() { return Inertia::render('Admin/Generic/Index', ['title'=>'Program Unggulan','routeName'=>'program','publicUrl'=>'/program','items'=>Program::orderBy('sort_order')->get(),'fields'=>[['name'=>'title','label'=>'Judul','type'=>'text'],['name'=>'subtitle','label'=>'Subjudul','type'=>'text'],['name'=>'icon','label'=>'Ikon','type'=>'select','options'=>self::ICONS,'default'=>'wrench-screwdriver'],['name'=>'description','label'=>'Deskripsi','type'=>'textarea'],['name'=>'image','label'=>'Gambar','type'=>'file'],['name'=>'sort_order','label'=>'Urutan','type'=>'number','default'=>0],['name'=>'is_active','label'=>'Aktif (1/0)','type'=>'select','options'=>['1','0'],'default'=>'1']]]); }
+    public function programsStore(Request $r) { return $this->storeModel(Program::class, $r, ['title'=>'required|string|max:255','subtitle'=>'nullable|string|max:255','icon'=>['nullable','in:'.implode(',', self::ICONS)],'description'=>'nullable|string','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['image']); }
+    public function programsUpdate(Program $program, Request $r) { return $this->updateModel($program, $r, ['title'=>'required|string|max:255','subtitle'=>'nullable|string|max:255','icon'=>['nullable','in:'.implode(',', self::ICONS)],'description'=>'nullable|string','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['image']); }
+    public function programsDestroy(Program $program) { $this->dropFile($program->image); $program->delete(); return back()->with('success','Data dihapus.'); }
+
+    // --- Facilities ---
+    public function facilities() { return Inertia::render('Admin/Generic/Index', ['title'=>'Sarana','routeName'=>'sarana','publicUrl'=>'/sarana','items'=>Facility::orderBy('sort_order')->get(),'fields'=>[['name'=>'name','label'=>'Nama','type'=>'text'],['name'=>'category','label'=>'Kategori','type'=>'text','hint'=>'Dipakai sebagai tombol filter di /sarana (mis. Bengkel, Lab, Ruang Teori).'],['name'=>'description','label'=>'Deskripsi','type'=>'textarea'],['name'=>'quantity','label'=>'Jumlah','type'=>'number','default'=>1],['name'=>'condition','label'=>'Kondisi','type'=>'text'],['name'=>'image','label'=>'Gambar','type'=>'file'],['name'=>'sort_order','label'=>'Urutan','type'=>'number','default'=>0],['name'=>'is_active','label'=>'Aktif (1/0)','type'=>'select','options'=>['1','0'],'default'=>'1']]]); }
+    public function facilitiesStore(Request $r) { return $this->storeModel(Facility::class, $r, ['name'=>'required|string|max:255','category'=>'nullable|string|max:100','description'=>'nullable|string','quantity'=>'nullable|integer','condition'=>'nullable|string|max:100','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['image']); }
+    public function facilitiesUpdate(Facility $facility, Request $r) { return $this->updateModel($facility, $r, ['name'=>'required|string|max:255','category'=>'nullable|string|max:100','description'=>'nullable|string','quantity'=>'nullable|integer','condition'=>'nullable|string|max:100','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['image']); }
+    public function facilitiesDestroy(Facility $facility) { $this->dropFile($facility->image); $facility->delete(); return back()->with('success','Data dihapus.'); }
+
+    // --- Achievements ---
+    public function achievements() { return Inertia::render('Admin/Generic/Index', ['title'=>'Prestasi','routeName'=>'prestasi','publicUrl'=>'/prestasi','items'=>Achievement::orderByDesc('year')->orderBy('sort_order')->get(),'fields'=>[['name'=>'title','label'=>'Judul','type'=>'text'],['name'=>'student_name','label'=>'Nama Siswa','type'=>'text'],['name'=>'level','label'=>'Tingkat','type'=>'select','options'=>['Kota','Provinsi','Nasional','Internasional'],'default'=>'Kota'],['name'=>'rank','label'=>'Peringkat','type'=>'text'],['name'=>'organizer','label'=>'Penyelenggara','type'=>'text'],['name'=>'year','label'=>'Tahun','type'=>'number','default'=>(int) date('Y')],['name'=>'achieved_at','label'=>'Tanggal Prestasi','type'=>'date'],['name'=>'description','label'=>'Deskripsi','type'=>'textarea'],['name'=>'image','label'=>'Gambar','type'=>'file'],['name'=>'is_featured','label'=>'Unggulan (1/0)','type'=>'select','options'=>['1','0'],'default'=>'0'],['name'=>'sort_order','label'=>'Urutan','type'=>'number','default'=>0],['name'=>'is_active','label'=>'Aktif (1/0)','type'=>'select','options'=>['1','0'],'default'=>'1']]]); }
+    public function achievementsStore(Request $r) { return $this->storeModel(Achievement::class, $r, ['title'=>'required|string|max:255','student_name'=>'nullable|string|max:200','level'=>'nullable|string|max:100','rank'=>'nullable|string|max:100','organizer'=>'nullable|string|max:200','year'=>'nullable|integer|min:1900|max:2100','achieved_at'=>'nullable|date','description'=>'nullable|string','is_featured'=>'nullable|boolean','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['image']); }
+    public function achievementsUpdate(Achievement $achievement, Request $r) { return $this->updateModel($achievement, $r, ['title'=>'required|string|max:255','student_name'=>'nullable|string|max:200','level'=>'nullable|string|max:100','rank'=>'nullable|string|max:100','organizer'=>'nullable|string|max:200','year'=>'nullable|integer|min:1900|max:2100','achieved_at'=>'nullable|date','description'=>'nullable|string','is_featured'=>'nullable|boolean','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['image']); }
+    public function achievementsDestroy(Achievement $achievement) { $this->dropFile($achievement->image); $achievement->delete(); return back()->with('success','Data dihapus.'); }
+
+    // --- Testimonials ---
+    public function testimonials() { return Inertia::render('Admin/Generic/Index', ['title'=>'Testimoni','routeName'=>'testimoni','publicUrl'=>'/alumni','canCreate'=>false,'items'=>Testimonial::orderByRaw("FIELD(status,'pending','approved','rejected')")->latest()->get(),'fields'=>[['name'=>'name','label'=>'Nama','type'=>'text'],['name'=>'graduation_year','label'=>'Tahun Lulus','type'=>'number'],['name'=>'occupation','label'=>'Pekerjaan','type'=>'text'],['name'=>'workplace','label'=>'Tempat Kerja','type'=>'text'],['name'=>'message','label'=>'Isi Testimoni','type'=>'textarea'],['name'=>'rating','label'=>'Bintang (1-5)','type'=>'number','default'=>5],['name'=>'photo','label'=>'Foto','type'=>'file'],['name'=>'is_featured','label'=>'Unggulan (1/0)','type'=>'select','options'=>['1','0'],'default'=>'0']]]); }
+    public function testimonialsUpdate(Testimonial $testimonial, Request $r) { $d=$r->validate(['status'=>'nullable|in:pending,approved,rejected','is_featured'=>'nullable|boolean','name'=>'sometimes|required|string|max:150','graduation_year'=>'sometimes|required|integer|min:1900|max:'.(date('Y')+1),'occupation'=>'nullable|string|max:150','workplace'=>'nullable|string|max:150','message'=>'sometimes|required|string|max:1000','rating'=>'sometimes|integer|min:1|max:5','photo'=>self::IMAGE_RULE]); unset($d['photo']); if($r->hasFile('photo')){ $this->dropFile($testimonial->photo); $d['photo']=$r->file('photo')->store('content','public'); } $testimonial->update($d); return back()->with('success','Testimoni diperbarui!'); }
+    public function testimonialsDestroy(Testimonial $testimonial) { $this->dropFile($testimonial->photo); $testimonial->delete(); return back()->with('success','Testimoni dihapus.'); }
+
+    // --- Teachers ---
+    public function teachers() { return Inertia::render('Admin/Generic/Index', ['title'=>'Guru & Instruktur','routeName'=>'guru','publicUrl'=>'/guru','items'=>Teacher::orderBy('sort_order')->get(),'fields'=>[['name'=>'name','label'=>'Nama','type'=>'text'],['name'=>'position','label'=>'Jabatan','type'=>'text','hint'=>'Jabatan berisi kata "Kepala" dipakai sebagai penyambut di Beranda bila nama Kepala Program di Pengaturan kosong.'],['name'=>'subject','label'=>'Mapel','type'=>'text'],['name'=>'education','label'=>'Pendidikan','type'=>'text'],['name'=>'email','label'=>'Email (tidak ditampilkan publik)','type'=>'text'],['name'=>'bio','label'=>'Bio (catatan internal)','type'=>'textarea'],['name'=>'photo','label'=>'Foto','type'=>'file'],['name'=>'sort_order','label'=>'Urutan','type'=>'number','default'=>0],['name'=>'is_active','label'=>'Aktif (1/0)','type'=>'select','options'=>['1','0'],'default'=>'1']]]); }
+    public function teachersStore(Request $r) { return $this->storeModel(Teacher::class, $r, ['name'=>'required|string|max:200','position'=>'nullable|string|max:200','subject'=>'nullable|string|max:200','education'=>'nullable|string|max:255','email'=>'nullable|email|max:150','bio'=>'nullable|string','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['photo']); }
+    public function teachersUpdate(Teacher $teacher, Request $r) { return $this->updateModel($teacher, $r, ['name'=>'required|string|max:200','position'=>'nullable|string|max:200','subject'=>'nullable|string|max:200','education'=>'nullable|string|max:255','email'=>'nullable|email|max:150','bio'=>'nullable|string','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['photo']); }
+    public function teachersDestroy(Teacher $teacher) { $this->dropFile($teacher->photo); $teacher->delete(); return back()->with('success','Data dihapus.'); }
+
+    // --- Partners ---
+    public function partners() { return Inertia::render('Admin/Generic/Index', ['title'=>'Mitra Industri','routeName'=>'mitra','items'=>Partner::orderBy('sort_order')->get(),'fields'=>[['name'=>'name','label'=>'Nama','type'=>'text'],['name'=>'website','label'=>'Website','type'=>'text'],['name'=>'category','label'=>'Kategori','type'=>'text'],['name'=>'description','label'=>'Deskripsi','type'=>'textarea'],['name'=>'logo','label'=>'Logo','type'=>'file'],['name'=>'sort_order','label'=>'Urutan','type'=>'number','default'=>0],['name'=>'is_active','label'=>'Aktif (1/0)','type'=>'select','options'=>['1','0'],'default'=>'1']]]); }
+    public function partnersStore(Request $r) { return $this->storeModel(Partner::class, $r, ['name'=>'required|string|max:200','website'=>'nullable|url','category'=>'nullable|string|max:100','description'=>'nullable|string','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['logo']); }
+    public function partnersUpdate(Partner $partner, Request $r) { return $this->updateModel($partner, $r, ['name'=>'required|string|max:200','website'=>'nullable|url','category'=>'nullable|string|max:100','description'=>'nullable|string','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['logo']); }
+    public function partnersDestroy(Partner $partner) { $this->dropFile($partner->logo); $partner->delete(); return back()->with('success','Data dihapus.'); }
+
+    // --- Gallery ---
+    public function gallery() { return Inertia::render('Admin/Generic/Index', ['title'=>'Galeri','routeName'=>'galeri','items'=>Gallery::orderBy('sort_order')->get(),'fields'=>[['name'=>'title','label'=>'Judul','type'=>'text'],['name'=>'type','label'=>'Tipe','type'=>'select','options'=>['image','video'],'default'=>'image'],['name'=>'video_url','label'=>'URL Video','type'=>'text'],['name'=>'album','label'=>'Album','type'=>'text'],['name'=>'caption','label'=>'Keterangan','type'=>'textarea'],['name'=>'file','label'=>'File Gambar','type'=>'file'],['name'=>'sort_order','label'=>'Urutan','type'=>'number','default'=>0],['name'=>'is_active','label'=>'Aktif (1/0)','type'=>'select','options'=>['1','0'],'default'=>'1']]]); }
+    public function galleryStore(Request $r) { $d=$r->validate(['title'=>'nullable|string|max:255','type'=>'required|in:image,video','video_url'=>'nullable|url','album'=>'nullable|string|max:100','caption'=>'nullable|string','file'=>self::IMAGE_RULE,'sort_order'=>'nullable|integer','is_active'=>'nullable|boolean']); if($d['type']==='image' && !$r->hasFile('file')) return back()->withErrors(['file'=>'File gambar wajib diunggah untuk tipe Gambar.'])->withInput(); if($d['type']==='video' && empty($d['video_url'])) return back()->withErrors(['video_url'=>'URL video wajib diisi untuk tipe Video.'])->withInput(); unset($d['file']); if($r->hasFile('file'))$d['file']=$r->file('file')->store('gallery','public'); Gallery::create($this->withDefaults($d)); return back()->with('success','Media ditambahkan!'); }
+    public function galleryUpdate(Gallery $gallery, Request $r) { $rules=['title'=>'nullable|string|max:255','type'=>'required|in:image,video','video_url'=>'nullable|url','album'=>'nullable|string|max:100','caption'=>'nullable|string','sort_order'=>'nullable|integer','is_active'=>'nullable|boolean']; $rules['file']=$r->hasFile('file')?self::IMAGE_RULE:'nullable'; $d=$r->validate($rules); unset($d['file']); if($d['type']==='image' && !$r->hasFile('file') && !$gallery->file) return back()->withErrors(['file'=>'File gambar wajib diunggah untuk tipe Gambar.'])->withInput(); if($d['type']==='video' && empty($d['video_url'])) return back()->withErrors(['video_url'=>'URL video wajib diisi untuk tipe Video.'])->withInput(); if($r->hasFile('file')){ $this->dropFile($gallery->file); $d['file']=$r->file('file')->store('gallery','public'); } $gallery->update($this->withDefaults($d)); return back()->with('success','Media diperbarui!'); }
+    public function galleryDestroy(Gallery $gallery) { $this->dropFile($gallery->file); $gallery->delete(); return back()->with('success','Media dihapus.'); }
+
+    // --- Categories ---
+    public function categories() { return Inertia::render('Admin/Generic/Index', ['title'=>'Kategori','routeName'=>'kategori','items'=>Category::withCount('posts')->orderBy('sort_order')->get(),'fields'=>[['name'=>'name','label'=>'Nama','type'=>'text'],['name'=>'description','label'=>'Deskripsi','type'=>'textarea'],['name'=>'color','label'=>'Warna (#hex)','type'=>'text','default'=>'#1D5BF0'],['name'=>'sort_order','label'=>'Urutan','type'=>'number','default'=>0],['name'=>'is_active','label'=>'Aktif (1/0)','type'=>'select','options'=>['1','0'],'default'=>'1']]]); }
+    public function categoriesStore(Request $r) { $d=$r->validate(['name'=>'required|string|max:100|unique:categories,name','description'=>'nullable|string','color'=>['nullable','regex:/^#[0-9A-Fa-f]{6}$/'],'sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['name.unique'=>'Kategori dengan nama itu sudah ada.']); $d['slug']=Slug::unique('categories', $d['name']); Category::create($this->withDefaults($d)); return back()->with('success','Kategori ditambahkan!'); }
+    public function categoriesUpdate(Category $category, Request $r) { $d=$r->validate(['name'=>'required|string|max:100|unique:categories,name,'.$category->id,'description'=>'nullable|string','color'=>['nullable','regex:/^#[0-9A-Fa-f]{6}$/'],'sort_order'=>'nullable|integer','is_active'=>'nullable|boolean'], ['name.unique'=>'Kategori dengan nama itu sudah ada.']); $d['slug']=Slug::unique('categories', $d['name'], $category->id); $category->update($this->withDefaults($d)); return back()->with('success','Kategori diperbarui!'); }
+    public function categoriesDestroy(Category $category) { $n=$category->posts()->count(); if($n>0){ return back()->with('error', 'Kategori "'.$category->name.'" masih dipakai '.$n.' berita. Pindahkan berita tersebut ke kategori lain dulu.'); } $category->delete(); return back()->with('success','Kategori dihapus.'); }
+
+    // --- Contact Messages ---
+    public function messages() { return Inertia::render('Admin/Generic/Index', ['title'=>'Pesan Masuk','routeName'=>'pesan','canCreate'=>false,'items'=>\App\Models\ContactMessage::latest()->take(200)->get(),'fields'=>[]]); }
+    public function messagesRead(\App\Models\ContactMessage $message) { $message->update(['is_read'=>true]); return back(); }
+    public function messagesDestroy(\App\Models\ContactMessage $message) { $message->delete(); return back()->with('success','Pesan dihapus.'); }
+
+}
