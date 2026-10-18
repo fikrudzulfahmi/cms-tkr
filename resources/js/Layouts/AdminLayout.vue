@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { Link, usePage, router } from '@inertiajs/vue3'
+import { Head, Link, usePage, router } from '@inertiajs/vue3'
 
 const page = usePage()
 const user = computed(() => page.props.auth?.user)
@@ -22,6 +22,21 @@ const isActive = (item) => {
 }
 
 const logout = () => router.post('/logout')
+
+// Judul tab: dari menu sidebar yang cocok dengan URL aktif (tidak perlu <Head> di tiap halaman admin).
+const pageTitle = computed(() => {
+  const url = (currentUrl.value || '').split('?')[0]
+  let best = null
+  for (const g of allMenuGroups) {
+    for (const it of g.items) {
+      for (const p of (it.match || [it.href])) {
+        const hit = p === '/admin' ? url === '/admin' : (url === p || url.startsWith(p + '/'))
+        if (hit && (!best || p.length > best.len)) best = { label: it.label, len: p.length }
+      }
+    }
+  }
+  return `${best ? best.label : 'Admin'} · Panel Admin`
+})
 
 const allMenuGroups = [
   {
@@ -70,6 +85,7 @@ const menuGroups = computed(() =>
 
 <template>
   <div class="min-h-screen grid-light flex">
+    <Head :title="pageTitle" />
     <!-- Sidebar Overlay (mobile) -->
     <div v-if="sidebarOpen" @click="sidebarOpen=false" class="fixed inset-0 z-20 bg-navy/60 lg:hidden"></div>
 

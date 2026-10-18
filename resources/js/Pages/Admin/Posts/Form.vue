@@ -238,10 +238,10 @@ const submit = () => {
           <!-- SEO Checker (ala Yoast) -->
           <div class="card overflow-hidden">
             <div class="grid grid-cols-2 border-b border-line">
-              <button type="button" @click="tab='seo'" :class="['flex items-center justify-center gap-2 py-3 text-sm font-semibold transition', tab==='seo' ? 'bg-navy text-white' : 'text-navy hover:bg-ice']">
+              <button type="button" @click="tab='seo'" :class="['flex items-center justify-center gap-2 py-3 text-sm font-semibold transition', tab==='seo' ? 'bg-blue-500 text-white' : 'text-navy hover:bg-ice']">
                 <span :class="['w-2.5 h-2.5 rounded-full', dot[light(seoAnalysis.seoScore)]]"></span>SEO <span class="font-mono text-xs opacity-75">{{ seoAnalysis.seoScore }}</span>
               </button>
-              <button type="button" @click="tab='read'" :class="['flex items-center justify-center gap-2 py-3 text-sm font-semibold transition', tab==='read' ? 'bg-navy text-white' : 'text-navy hover:bg-ice']">
+              <button type="button" @click="tab='read'" :class="['flex items-center justify-center gap-2 py-3 text-sm font-semibold transition', tab==='read' ? 'bg-blue-500 text-white' : 'text-navy hover:bg-ice']">
                 <span :class="['w-2.5 h-2.5 rounded-full', dot[light(seoAnalysis.readScore)]]"></span>Keterbacaan <span class="font-mono text-xs opacity-75">{{ seoAnalysis.readScore }}</span>
               </button>
             </div>

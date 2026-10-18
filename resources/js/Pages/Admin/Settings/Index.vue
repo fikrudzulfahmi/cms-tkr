@@ -127,7 +127,7 @@ onMounted(() => {
             :aria-selected="activeTab === t.key"
             :class="[
               'inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-semibold transition-colors',
-              activeTab === t.key ? 'bg-navy text-white' : 'text-slate-600 hover:bg-white hover:text-navy',
+              activeTab === t.key ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-white hover:text-navy',
             ]"
             @click="activeTab = t.key"
           >

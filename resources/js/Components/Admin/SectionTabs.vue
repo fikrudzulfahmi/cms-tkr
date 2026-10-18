@@ -22,7 +22,7 @@ const isActive = (href) => current.value === href || current.value.startsWith(hr
         :aria-current="isActive(item.href) ? 'page' : undefined"
         :class="[
           'px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors no-underline',
-          isActive(item.href) ? 'bg-navy text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-navy',
+          isActive(item.href) ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-navy',
         ]"
       >
         {{ item.label }}

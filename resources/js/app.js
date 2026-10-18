@@ -6,7 +6,7 @@ import axios from 'axios'
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 
 createInertiaApp({
-    title: title => `${title} - TKR [NAMA SMK]`,
+    title: title => (title ? `${title} — TKR` : 'TKR'),
     resolve: name => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
         createApp({ render: () => h(App, props) })
@@ -14,6 +14,6 @@ createInertiaApp({
             .mount(el)
     },
     progress: {
-        color: '#1e3a8a',
+        color: '#1D5BF0',
     },
 })
