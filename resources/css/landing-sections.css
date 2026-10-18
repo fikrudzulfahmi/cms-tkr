@@ -424,9 +424,6 @@
 }
 
 @media (max-width: 860px) {
-  /* menu mobile memakai .nav-actions yang sama; jangan ikut disembunyikan */
-  .tkr .mobile-menu .nav-actions .btn-primary,
-  .tkr .mobile-menu .nav-actions .btn-secondary { display: inline-flex; }
   .tkr .about-wrap, .tkr .contact-wrap, .tkr .faq-wrap { gap: 28px; }
   .tkr .fac-grid { grid-template-columns: repeat(2, 1fr); }
   .tkr .fac-card.big { grid-column: span 2; grid-row: span 1; }

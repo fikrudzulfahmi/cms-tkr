@@ -1,4 +1,5 @@
 <script setup>
+import SiteNav from '@/Components/Shared/SiteNav.vue'
 /**
  * Landing page Jurusan TKR — tema "Blueprint Drive".
  * Struktur: hero TKR (nav + headline + simulasi scan EFI) → ticker → mitra →
@@ -82,17 +83,6 @@ const ICONS = {
 const icon = (name) => ICONS[name] || ICONS.engine
 const kompNum = (i) => String(i + 1).padStart(2, '0')
 
-/* ---------- Navigator hero ---------- */
-const navLinks = [
-  { label: 'Tentang', href: '#tentang' },
-  { label: 'Kompetensi', href: '#kompetensi' },
-  { label: 'Alur Belajar', href: '#alur' },
-  { label: 'Sarana', href: '#sarana' },
-  { label: 'Prestasi', href: '#prestasi' },
-  { label: 'Karier', href: '#karier' },
-]
-const menuOpen = ref(false)
-const closeMenu = () => { menuOpen.value = false }
 
 /* ---------- Alur belajar ---------- */
 const alur = [
@@ -295,9 +285,7 @@ function injectJsonLd() {
 }
 
 const showTop = ref(false)
-const scrolled = ref(false)
 const onScroll = () => {
-  scrolled.value = window.scrollY > 8
   showTop.value = window.scrollY > 480
 }
 function toTop() {
@@ -331,50 +319,8 @@ onBeforeUnmount(() => {
     </Head>
 
     <!-- ================= HERO ================= -->
+    <SiteNav />
     <header class="hero grid-ice">
-      <nav class="tkr-nav" :class="{ scrolled }" aria-label="Navigasi utama">
-        <div class="container nav-inner">
-          <a class="brand" href="#top" aria-label="Beranda TKR">
-            <span class="brand-mark">
-              <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 19l3-7a3 3 0 0 1 2.8-2h12.4a3 3 0 0 1 2.8 2l3 7v5H4z" />
-                <path d="M4 19h24" />
-                <circle cx="10" cy="24" r="2.5" fill="#7FD0FF" stroke="none" />
-                <circle cx="22" cy="24" r="2.5" fill="#7FD0FF" stroke="none" />
-              </svg>
-            </span>
-            <span class="brand-text">
-              <strong>TKR</strong>
-              <span>{{ schoolName }}</span>
-            </span>
-          </a>
-
-          <div class="nav-links">
-            <a v-for="l in navLinks" :key="l.href" :href="l.href">{{ l.label }}</a>
-          </div>
-
-          <div class="nav-actions">
-            <a class="btn btn-secondary" href="#kontak">Kontak</a>
-            <a class="btn btn-primary" href="#spmb">Daftar Sekarang</a>
-            <button type="button" class="nav-burger" :aria-expanded="menuOpen" aria-label="Buka menu" @click="menuOpen = !menuOpen">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-                <path v-if="!menuOpen" d="M4 7h16M4 12h16M4 17h16" />
-                <path v-else d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div v-if="menuOpen" class="mobile-menu">
-          <div class="container">
-            <a v-for="l in navLinks" :key="l.href" :href="l.href" @click="closeMenu">{{ l.label }}</a>
-            <div class="nav-actions">
-              <a class="btn btn-secondary" href="#kontak" @click="closeMenu">Kontak</a>
-              <a class="btn btn-primary" href="#spmb" @click="closeMenu">Daftar Sekarang</a>
-            </div>
-          </div>
-        </div>
-      </nav>
 
       <div id="top" class="container hero-content">
         <div class="hero-text">
