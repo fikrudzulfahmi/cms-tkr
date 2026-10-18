@@ -18,7 +18,7 @@
 .tkr .btn-ghost:hover { background: rgba(255, 255, 255, .12); border-color: var(--white); }
 .tkr .head-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .tkr .empty { color: var(--muted); font-size: 15px; padding: 18px 0; }
-.tkr .hidden { display: none !important; }
+.tkr input.hidden { display: none !important; }
 .tkr .mono-label.accent { color: var(--sky); }
 .tkr .fade-enter-active, .tkr .fade-leave-active { transition: opacity .18s ease; }
 .tkr .fade-enter-from, .tkr .fade-leave-to { opacity: 0; }
