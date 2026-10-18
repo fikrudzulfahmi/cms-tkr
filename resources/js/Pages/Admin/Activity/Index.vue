@@ -81,12 +81,12 @@ const suspiciousIps = computed(() => props.failedByIp.filter((r) => r.suspicious
 
       <!-- Filter -->
       <div class="card p-5">
-        <div class="grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
-          <div class="lg:col-span-2">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-12 gap-3 [&>*]:min-w-0 [&_.form-input]:w-full [&_.form-input]:min-w-0">
+          <div class="sm:col-span-2 lg:col-span-4">
             <label class="form-label" for="act-q">Cari</label>
             <input id="act-q" v-model="f.q" type="search" placeholder="keterangan, nama, IP, atau path" class="form-input text-sm" />
           </div>
-          <div>
+          <div class="lg:col-span-2">
             <label class="form-label" for="act-aksi">Aksi</label>
             <select id="act-aksi" v-model="f.aksi" class="form-input text-sm">
               <option value="">Semua</option>
@@ -94,14 +94,14 @@ const suspiciousIps = computed(() => props.failedByIp.filter((r) => r.suspicious
               <option v-for="a in actions" :key="a.value" :value="a.value">{{ a.label }}</option>
             </select>
           </div>
-          <div>
+          <div class="lg:col-span-3">
             <label class="form-label" for="act-modul">Modul</label>
             <select id="act-modul" v-model="f.modul" class="form-input text-sm">
               <option value="">Semua</option>
               <option v-for="(label, key) in modules" :key="key" :value="key">{{ label }}</option>
             </select>
           </div>
-          <div>
+          <div class="lg:col-span-3">
             <label class="form-label" for="act-user">Pengguna</label>
             <select id="act-user" v-model="f.user" class="form-input text-sm">
               <option value="">Semua</option>
@@ -109,15 +109,13 @@ const suspiciousIps = computed(() => props.failedByIp.filter((r) => r.suspicious
               <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.name }}</option>
             </select>
           </div>
-          <div class="flex items-end gap-2">
-            <div class="flex-1">
-              <label class="form-label" for="act-dari">Dari</label>
-              <input id="act-dari" v-model="f.dari" type="date" class="form-input text-sm" />
-            </div>
-            <div class="flex-1">
-              <label class="form-label" for="act-sampai">Sampai</label>
-              <input id="act-sampai" v-model="f.sampai" type="date" class="form-input text-sm" />
-            </div>
+          <div class="lg:col-span-3">
+            <label class="form-label" for="act-dari">Dari</label>
+            <input id="act-dari" v-model="f.dari" type="date" class="form-input text-sm" />
+          </div>
+          <div class="lg:col-span-3">
+            <label class="form-label" for="act-sampai">Sampai</label>
+            <input id="act-sampai" v-model="f.sampai" type="date" class="form-input text-sm" />
           </div>
         </div>
         <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
