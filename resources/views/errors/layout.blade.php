@@ -20,12 +20,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --navy: #0B1F4D;
-            --navy-panel: #0F3FB8;
-            --accent: #7FD0FF;
-            --ice: #EAF5FF;
-            --muted: #C9DDF5;
-            --subtle: #A9C3E3;
+            --blue: #1D5BF0;
+            --blue-deep: #0F3FB8;
+            --sky: #7FD0FF;
+            --sky-soft: #D9EFFF;
+            --ice: #F2F8FF;
+            --line: #D6E6FA;
+            --line-strong: #B9D3F5;
+            --ink: #0B1F4D;
+            --muted: #4B5F86;
         }
         *, *::before, *::after { box-sizing: border-box; }
         html, body { height: 100%; }
@@ -33,26 +36,21 @@
             margin: 0;
             min-height: 100vh;
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-            color: var(--ice);
-            background:
-                radial-gradient(1000px 600px at 78% -10%, rgba(124, 200, 255, .22), transparent 60%),
-                radial-gradient(800px 500px at 0% 100%, rgba(30, 79, 168, .35), transparent 65%),
-                linear-gradient(160deg, var(--navy) 0%, #0B1F45 55%, var(--navy-panel) 100%);
+            color: var(--ink);
+            background-color: var(--ice);
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
         }
-        /* Garis grid halus, senada hero landing */
+        /* Grid blueprint halus, senada hero landing */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
             background-image:
-                linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px);
-            background-size: 72px 72px;
-            mask-image: radial-gradient(circle at 50% 40%, #000 25%, transparent 78%);
-            -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 25%, transparent 78%);
+                linear-gradient(rgba(29, 91, 240, .07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(29, 91, 240, .07) 1px, transparent 1px);
+            background-size: 56px 56px;
             pointer-events: none;
         }
         .wrap {
@@ -71,23 +69,23 @@
             display: inline-flex;
             align-items: center;
             gap: 12px;
-            color: var(--ice);
+            color: var(--ink);
             text-decoration: none;
-            font-family: 'Sora', system-ui, sans-serif;
+            font-family: 'Chakra Petch', system-ui, sans-serif;
             font-weight: 700;
             letter-spacing: -.2px;
         }
         .brand-mark {
             width: 44px; height: 44px;
-            border-radius: 50%;
-            border: 1px solid rgba(124, 200, 255, .5);
+            border-radius: 12px;
+            background: var(--blue);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-family: 'JetBrains Mono', ui-monospace, monospace;
             font-size: 12px;
             letter-spacing: 1.5px;
-            color: var(--accent);
+            color: #fff;
         }
         .brand small {
             display: block;
@@ -95,7 +93,7 @@
             font-size: 10px;
             letter-spacing: 2px;
             text-transform: uppercase;
-            color: var(--subtle);
+            color: var(--muted);
             font-weight: 400;
             margin-top: 2px;
         }
@@ -112,41 +110,35 @@
             max-width: 720px;
             padding: 48px 44px 40px;
             border-radius: 28px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .025));
-            border: 1px solid rgba(124, 200, 255, .22);
-            box-shadow: 0 30px 80px rgba(3, 10, 26, .45);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            background: #fff;
+            border: 1px solid var(--line);
+            box-shadow: 0 18px 50px rgba(29, 91, 240, .10);
             text-align: center;
             overflow: hidden;
         }
-        .card::after {
+        .card::before {
             content: '';
             position: absolute;
-            inset: auto -40% -65% auto;
-            width: 320px; height: 320px;
-            background: radial-gradient(circle, rgba(124, 200, 255, .18), transparent 70%);
-            pointer-events: none;
+            left: 0; right: 0; top: 0;
+            height: 6px;
+            background: var(--blue);
         }
         .code-wrap { position: relative; display: inline-block; margin-bottom: 8px; }
         .code {
             position: relative;
-            font-family: 'Sora', system-ui, sans-serif;
+            font-family: 'Chakra Petch', system-ui, sans-serif;
             font-size: clamp(72px, 15vw, 128px);
             line-height: 1;
-            font-weight: 800;
-            letter-spacing: -6px;
-            background: linear-gradient(180deg, #FFFFFF 15%, var(--accent) 95%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+            font-weight: 700;
+            letter-spacing: -4px;
+            color: var(--blue);
         }
         .gear {
             position: absolute;
             right: -46px;
             top: -26px;
             width: 112px; height: 112px;
-            opacity: .28;
+            opacity: .55;
             animation: spin 26s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -156,15 +148,15 @@
             font-size: 11px;
             letter-spacing: 2.4px;
             text-transform: uppercase;
-            color: var(--accent);
+            color: var(--blue-deep);
         }
         h1 {
             margin: 0 0 14px;
-            font-family: 'Sora', system-ui, sans-serif;
+            font-family: 'Chakra Petch', system-ui, sans-serif;
             font-size: clamp(22px, 3.4vw, 30px);
             line-height: 1.25;
-            letter-spacing: -.6px;
-            color: #FFFFFF;
+            letter-spacing: -.3px;
+            color: var(--ink);
         }
         .desc {
             margin: 0 auto 30px;
@@ -196,29 +188,29 @@
             transition: transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
         }
         .btn:active { transform: translateY(1px); }
-        .btn-primary { background: var(--accent); color: var(--navy); }
-        .btn-primary:hover { background: #A6DBFF; }
-        .btn-ghost { background: rgba(255, 255, 255, .06); color: var(--ice); border-color: rgba(201, 221, 245, .35); }
-        .btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: rgba(124, 200, 255, .08); }
-        .btn:focus-visible, .brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-primary:hover { background: var(--blue-deep); }
+        .btn-ghost { background: #fff; color: var(--blue-deep); border-color: var(--line-strong); }
+        .btn-ghost:hover { border-color: var(--blue); background: var(--sky-soft); }
+        .btn:focus-visible, .brand:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
         .hint {
             margin: 0;
             font-family: 'JetBrains Mono', ui-monospace, monospace;
             font-size: 11px;
             letter-spacing: .6px;
-            color: var(--subtle);
+            color: var(--muted);
         }
-        .hint span { color: var(--ice); }
+        .hint span { color: var(--ink); font-weight: 500; }
         footer {
             padding: 12px 0 4px;
             text-align: center;
             font-size: 12px;
-            color: var(--subtle);
+            color: var(--muted);
         }
         @media (max-width: 600px) {
             .wrap { padding: 22px 16px 18px; }
             .card { padding: 36px 20px 30px; border-radius: 22px; }
-            .code { letter-spacing: -3px; }
+            .code { letter-spacing: -2px; }
             .gear { right: -34px; top: -18px; width: 86px; height: 86px; }
             .actions .btn { width: 100%; }
         }
@@ -241,9 +233,9 @@
             <section class="card" role="alert" aria-labelledby="err-title">
                 <div class="code-wrap">
                     <svg class="gear" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-                        <circle cx="24" cy="24" r="10" stroke="#7FD0FF" stroke-width="1.6"/>
-                        <circle cx="24" cy="24" r="3.2" stroke="#7FD0FF" stroke-width="1.6"/>
-                        <g stroke="#7FD0FF" stroke-width="1.6" stroke-linecap="round">
+                        <circle cx="24" cy="24" r="10" stroke="#1D5BF0" stroke-width="1.6"/>
+                        <circle cx="24" cy="24" r="3.2" stroke="#1D5BF0" stroke-width="1.6"/>
+                        <g stroke="#1D5BF0" stroke-width="1.6" stroke-linecap="round">
                             <path d="M24 4v6M24 38v6M4 24h6M38 24h6M9.9 9.9l4.2 4.2M33.9 33.9l4.2 4.2M38.1 9.9l-4.2 4.2M14.1 33.9l-4.2 4.2"/>
                         </g>
                     </svg>
