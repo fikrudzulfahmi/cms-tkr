@@ -1,5 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { computed } from 'vue'
+import { Link, usePage } from '@inertiajs/vue3'
 
 defineProps({
   status: { type: Number, default: 404 },
@@ -7,16 +8,23 @@ defineProps({
   heading: { type: String, default: 'Halaman yang Anda cari tidak ada' },
   message: { type: String, default: 'Alamatnya mungkin salah ketik, atau halaman sudah dipindahkan.' },
 })
+
+const page = usePage()
+const s = computed(() => page.props.settings || {})
+const siteName = computed(() => (s.value.site_name || 'TKR').slice(0, 4))
+const deptName = computed(() => s.value.department_name || 'Teknik Kendaraan Ringan')
+const schoolName = computed(() => s.value.school_name || '[NAMA SMK]')
+const year = new Date().getFullYear()
 </script>
 
 <template>
   <div class="min-h-screen grid-light flex flex-col">
     <header class="w-full max-w-6xl mx-auto px-5 sm:px-8 py-6 flex items-center justify-between">
       <Link href="/" class="flex items-center gap-3 no-underline text-[#0B1F4D]">
-        <span class="w-11 h-11 rounded-xl bg-[#1D5BF0] flex items-center justify-center font-mono text-[11px] tracking-[1.5px] text-white">TKR</span>
+        <span class="w-11 h-11 rounded-xl bg-[#1D5BF0] flex items-center justify-center font-mono text-[11px] tracking-[1.5px] text-white">{{ siteName }}</span>
         <span class="font-display font-bold leading-tight">
-          Teknik Kendaraan Ringan
-          <small class="block font-mono text-[10px] tracking-[2px] uppercase text-[#4B5F86] font-normal mt-0.5">[NAMA SMK]</small>
+          {{ deptName }}
+          <small class="block font-mono text-[10px] tracking-[2px] uppercase text-[#4B5F86] font-normal mt-0.5">{{ schoolName }}</small>
         </span>
       </Link>
       <Link href="/berita" class="hidden sm:inline-flex text-sm text-[#4B5F86] hover:text-[#1D5BF0] transition-colors no-underline">Berita</Link>
@@ -60,7 +68,7 @@ defineProps({
     </main>
 
     <footer class="text-center text-xs text-[#4B5F86] pb-6">
-      &copy; {{ new Date().getFullYear() }} Teknik Kendaraan Ringan [NAMA SMK]
+      &copy; {{ year }} {{ deptName }} {{ schoolName }}
     </footer>
   </div>
 </template>

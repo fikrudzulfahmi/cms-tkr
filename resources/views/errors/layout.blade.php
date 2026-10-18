@@ -7,6 +7,11 @@
     $primaryLabel = $primaryLabel ?? 'Kembali ke Beranda';
     $secondaryUrl = $secondaryUrl ?? null;
     $secondaryLabel = $secondaryLabel ?? 'Halaman Sebelumnya';
+    // Identitas dari Pengaturan admin; rescue() agar halaman error tetap tampil walau DB bermasalah.
+    $cfg = rescue(fn () => \App\Models\Setting::whereIn('key', ['site_name', 'school_name', 'department_name'])->pluck('value', 'key')->all(), [], false) ?: [];
+    $siteName = trim($cfg['site_name'] ?? '') ?: 'TKR';
+    $deptName = trim($cfg['department_name'] ?? '') ?: 'Teknik Kendaraan Ringan';
+    $schoolName = trim($cfg['school_name'] ?? '') ?: '[NAMA SMK]';
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -14,7 +19,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title>{{ $code }} — {{ $label }} | Teknik Kendaraan Ringan</title>
+    <title>{{ $code }} — {{ $label }} | {{ $deptName }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -224,8 +229,8 @@
     <div class="wrap">
         <header class="top">
             <a class="brand" href="{{ url('/') }}">
-                <span class="brand-mark">TKR</span>
-                <span>Teknik Kendaraan Ringan<small>[NAMA SMK]</small></span>
+                <span class="brand-mark">{{ \Illuminate\Support\Str::limit($siteName, 4, '') }}</span>
+                <span>{{ $deptName }}<small>{{ $schoolName }}</small></span>
             </a>
         </header>
 
@@ -260,7 +265,7 @@
             </section>
         </main>
 
-        <footer>&copy; {{ date('Y') }} Teknik Kendaraan Ringan [NAMA SMK]</footer>
+        <footer>&copy; {{ date('Y') }} {{ $deptName }} {{ $schoolName }}</footer>
     </div>
 </body>
 </html>
