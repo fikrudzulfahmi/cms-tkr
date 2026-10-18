@@ -1,14 +1,17 @@
 <script setup>
 /**
- * Landing page Jurusan TKR — tema "Blueprint Drive" (spesifikasi desain).
- * Struktur: hero (nav + teks + simulasi scan EFI) → mitra → kompetensi →
- * alur → fasilitas → karier → CTA → footer.
+ * Landing page Jurusan TKR — tema "Blueprint Drive".
+ * Struktur: hero TKR (nav + headline + simulasi scan EFI) → ticker → mitra →
+ * seluruh section data-driven dari HomeController (tentang, kompetensi, alur,
+ * program, sarana, prestasi, berita, galeri, guru, karier, alumni, FAQ, SPMB,
+ * kontak) → footer.
  */
-import { Head, usePage } from '@inertiajs/vue3'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3'
+import { computed, onMounted, onBeforeUnmount, ref, nextTick, watch } from 'vue'
 import EfiScan from '@/Components/Landing/EfiScan.vue'
 import { CONFIG } from './content.js'
 import '../../../css/tkr.css'
+import '../../../css/landing-sections.css'
 
 const props = defineProps({
   sliders: { type: Array, default: () => [] },
@@ -27,33 +30,38 @@ const props = defineProps({
 
 const page = usePage()
 const s = computed(() => page.props.settings || {})
-const school = computed(() => s.value.school_name || CONFIG.namaSmk)
-
-const title = computed(() => `Jurusan Teknik Kendaraan Ringan — ${school.value}`)
-const metaDesc = computed(() => `Jurusan Teknik Kendaraan Ringan ${school.value}: belajar engine, EFI & diagnosis OBD, chassis, pemindah tenaga, kelistrikan, hingga kendaraan listrik. SPMB ${tahun.value} dibuka.`)
-
+const flash = computed(() => page.props.flash || {})
+const img = (p) => (p ? (/^https?:\/\//.test(p) ? p : `/storage/${p}`) : null)
+const schoolName = computed(() => s.value.school_name || CONFIG.namaSmk)
+const address = computed(() => s.value.address || CONFIG.alamat)
 const tahun = computed(() => s.value.spmb_year || CONFIG.tahunAjaran)
-const tanggalTutup = computed(() => s.value.spmb_deadline || CONFIG.tanggalTutup)
 
-/* ---------- navigasi ---------- */
-const navLinks = [
-  { label: 'Kompetensi', href: '#kompetensi' },
-  { label: 'Alur Belajar', href: '#alur' },
-  { label: 'Fasilitas', href: '#fasilitas' },
-  { label: 'Prospek Karier', href: '#karier' },
-]
-const menuOpen = ref(false)
-const scrolled = ref(false)
-const closeMenu = () => { menuOpen.value = false }
-const onScroll = () => { scrolled.value = window.scrollY > 8 }
-
-onMounted(() => {
-  onScroll()
-  window.addEventListener('scroll', onScroll, { passive: true })
+/* ---------- HEADLINE (hero berganti dari slider) ---------- */
+const slideIdx = ref(0)
+const headlines = computed(() => {
+  if (props.sliders.length) return props.sliders
+  return [{ title: s.value.hero_title || 'Teknik Kendaraan Ringan', subtitle: s.value.hero_subtitle || '', image: s.value.hero_bg }]
 })
-onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
+const current = computed(() => headlines.value[slideIdx.value % headlines.value.length])
+// Jangan pernah merender javascript:/data: dari isian admin sebagai href.
+const safeHref = (url) => (/^(https?:\/\/|\/|#)/i.test(String(url || '')) ? url : '#kompetensi')
+let slideTimer = null
+function goSlide(i) { slideIdx.value = (i + headlines.value.length) % headlines.value.length }
 
-/* ---------- ikon inline (spesifikasi §4.5) ---------- */
+/* ---------- Ticker pengumuman ---------- */
+const ticker = computed(() => {
+  const ann = props.posts.filter(p => p.category?.slug === 'pengumuman')
+  return (ann.length ? ann : props.posts).slice(0, 5)
+})
+
+/* ---------- Statistik hero ---------- */
+const heroStats = computed(() => [
+  { label: 'Siswa aktif', value: props.stats?.students ?? '—' },
+  { label: 'Mitra industri', value: props.stats?.partners ?? '—' },
+  { label: 'Lulusan terserap', value: props.stats?.absorption ?? '—' },
+])
+
+/* ---------- Ikon inline (Blueprint Drive) ---------- */
 const ICONS = {
   engine: '<path d="M4 10h3l2-3h6l2 3h3v8H4z"/><path d="M8 7V5h8v2M2 12v4M22 12v4"/>',
   diagnosis: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 21h10M12 17v4M7 13l3-3 2 2 4-4"/>',
@@ -61,106 +69,129 @@ const ICONS = {
   drivetrain: '<circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="12" cy="18" r="2"/><path d="M6 8v8M12 8v8M18 8v4H6"/>',
   electrical: '<path d="M12 2v20M4.9 7l14.2 10M4.9 17L19.1 7"/><path d="M9 4l3 2 3-2M9 20l3-2 3 2"/>',
   ev: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10v4"/><path d="M11 9l-2 3h4l-2 3"/>',
-  // alias ikon lama dari admin
+  // alias nama ikon dari panel admin
   'wrench-screwdriver': '<path d="M4 10h3l2-3h6l2 3h3v8H4z"/><path d="M8 7V5h8v2M2 12v4M22 12v4"/>',
   'cpu-chip': '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 21h10M12 17v4M7 13l3-3 2 2 4-4"/>',
   bolt: '<path d="M12 2v20M4.9 7l14.2 10M4.9 17L19.1 7"/><path d="M9 4l3 2 3-2M9 20l3-2 3 2"/>',
   'shield-check': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M4.5 16.5l5-3M19.5 16.5l-5-3"/>',
+  'building-storefront': '<path d="M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9h18M9 20v-6h6v6"/>',
+  briefcase: '<path d="M3 7h18v13H3zM8 7V4h8v3M3 13h18"/>',
+  'document-check': '<path d="M6 2h9l5 5v15H6zM14 2v6h6M9 15l2 2 4-4"/>',
+  users: '<path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.9M16 2.1a4 4 0 0 1 0 7.8"/>',
 }
-
-/* ---------- kompetensi ---------- */
-const KOMP_FALLBACK = [
-  { title: 'Engine Bensin & Diesel', short_description: 'Tune up, overhaul mesin, sistem pelumasan, pendinginan, dan bahan bakar.', icon: 'engine' },
-  { title: 'EFI & Diagnosis OBD', short_description: 'Membaca data sensor dan kode kerusakan ECU menggunakan scan tool OBD-II.', icon: 'diagnosis' },
-  { title: 'Chassis: Rem, Suspensi & Kemudi', short_description: 'Sistem rem termasuk ABS, suspensi, power steering, serta spooring dan balancing.', icon: 'chassis' },
-  { title: 'Pemindah Tenaga', short_description: 'Kopling, transmisi manual, transmisi otomatis dan CVT, poros propeler, serta diferensial.', icon: 'drivetrain' },
-  { title: 'Kelistrikan Bodi & AC', short_description: 'Sistem starter, pengisian, penerangan, kelistrikan bodi, dan AC mobil.', icon: 'electrical' },
-  { title: 'Kendaraan Listrik & Hybrid', short_description: 'Dasar baterai tegangan tinggi, motor listrik, dan prosedur keselamatan kerja EV.', icon: 'ev' },
-]
-const kompList = computed(() => {
-  const src = props.competencies?.length ? props.competencies : KOMP_FALLBACK
-  return src.slice(0, 6).map((c, i) => ({
-    title: c.title,
-    desc: c.short_description || c.description || '',
-    icon: c.icon || KOMP_FALLBACK[i % 6].icon,
-  }))
-})
+const icon = (name) => ICONS[name] || ICONS.engine
 const kompNum = (i) => String(i + 1).padStart(2, '0')
 
-/* ---------- fasilitas ---------- */
-const FAS_FALLBACK = [
-  { name: 'Bengkel Praktik & Car Lift', description: '[Jumlah] stall dan [jumlah] unit car lift.', image: null },
-  { name: 'Scan Tool & Engine Analyzer', description: 'Alat diagnosis untuk sistem EFI dan OBD-II.', image: null },
-  { name: 'Spooring & Balancing', description: 'Peralatan penyetelan roda dan kaki-kaki.', image: null },
-  { name: 'Trainer Kelistrikan & EV', description: 'Media praktik kelistrikan bodi dan kendaraan listrik.', image: null },
+/* ---------- Navigator hero ---------- */
+const navLinks = [
+  { label: 'Tentang', href: '#tentang' },
+  { label: 'Kompetensi', href: '#kompetensi' },
+  { label: 'Alur Belajar', href: '#alur' },
+  { label: 'Sarana', href: '#sarana' },
+  { label: 'Prestasi', href: '#prestasi' },
+  { label: 'Karier', href: '#karier' },
 ]
-const fasList = computed(() => {
-  const src = props.facilities?.length ? props.facilities : FAS_FALLBACK
-  return src.slice(0, 4).map((f) => ({
-    name: f.name,
-    description: f.description || '',
-    image: f.image || null,
-  }))
+const menuOpen = ref(false)
+const closeMenu = () => { menuOpen.value = false }
+
+/* ---------- Alur belajar ---------- */
+const alur = [
+  { label: 'KELAS X', title: 'Dasar Otomotif', desc: 'Keselamatan kerja, penggunaan alat ukur dan perkakas, serta prinsip kerja kendaraan ringan.', dark: false },
+  { label: 'KELAS XI', title: 'Praktik Bengkel', desc: 'Servis mesin, kelistrikan, sasis, dan sistem injeksi pada unit kendaraan nyata di bengkel sekolah.', dark: false },
+  { label: 'KELAS XII', title: 'PKL & Uji Kompetensi', desc: 'Praktik kerja lapangan di mitra industri, lalu uji kompetensi untuk sertifikat keahlian.', dark: true },
+]
+
+/* ---------- Sarana ---------- */
+const facCat = ref('Semua')
+const facCats = computed(() => ['Semua', ...new Set(props.facilities.map(f => f.category).filter(Boolean))])
+const facList = computed(() => facCat.value === 'Semua' ? props.facilities : props.facilities.filter(f => f.category === facCat.value))
+
+/* ---------- Berita ---------- */
+const postCat = ref('semua')
+const postList = computed(() => {
+  const list = postCat.value === 'semua' ? props.posts : props.posts.filter(p => p.category?.slug === postCat.value)
+  return list.slice(0, 6)
 })
-const img = (p) => (p ? (/^https?:\/\//.test(p) ? p : `/storage/${p}`) : null)
+const featuredPost = computed(() => postList.value[0])
+const otherPosts = computed(() => postList.value.slice(1))
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
 
-/* ---------- mitra ---------- */
-const mitraList = computed(() => {
-  if (props.partners?.length) {
-    return props.partners.slice(0, 5).map((p) => ({ name: p.name, logo: p.logo }))
-  }
-  return CONFIG.mitra.map((n) => ({ name: n, logo: null }))
+/* ---------- Sambutan kepala jurusan ---------- */
+const kajur = computed(() => {
+  const t = props.teachers.find(t => /kepala/i.test(t.position || '')) || props.teachers[0]
+  if (!s.value.profile_head_name) return t
+  return { name: s.value.profile_head_name, position: s.value.profile_head_position, photo: s.value.profile_head_photo || null }
+})
+// Kutipan sambutan: paragraf terakhir yang bukan salam pembuka, dari Pengaturan → Profil
+const sambutan = computed(() => {
+  const ps = String(s.value.profile_speech || '').split(/\n\s*\n/).map(p => p.trim()).filter(p => p && !/^assalamu/i.test(p))
+  const t = ps[0] || 'Kami berkomitmen membekali setiap siswa dengan keterampilan nyata, karakter Islami, dan kesiapan kerja agar mampu bersaing di dunia industri otomotif.'
+  return t.length > 260 ? t.slice(0, 257).replace(/\s+\S*$/, '') + '…' : t
 })
 
-/* ---------- statistik ---------- */
-const partnerCount = computed(() => props.partners.filter((p) => p.name && p.name !== '[LOGO MITRA]').length)
-const statCards = computed(() => [
-  { value: s.value.stat_students || CONFIG.stats.siswa, label: 'Siswa aktif' },
-  { value: partnerCount.value > 0 ? `${partnerCount.value}+` : CONFIG.stats.mitra, label: 'Mitra dealer & industri' },
-  { value: s.value.stat_absorption || CONFIG.stats.serapan, label: 'Lulusan terserap' },
-])
-
-/* ---------- alur belajar ---------- */
-const alurList = [
-  { roman: 'X', title: 'Dasar Otomotif', desc: 'K3 bengkel, alat ukur presisi, gambar teknik, dan prinsip kerja kendaraan.', white: false },
-  { roman: 'XI', title: 'Praktik Sistem', desc: 'Engine, chassis, pemindah tenaga, dan kelistrikan pada unit mobil di bengkel sekolah.', white: false },
-  { roman: 'XII', title: 'PKL & Sertifikasi', desc: 'Praktik kerja lapangan di dealer atau bengkel mitra, lalu uji kompetensi keahlian.', white: true },
+const karier = [
+  { no: '01', title: 'Mekanik Dealer Resmi', desc: 'Di dealer dan bengkel resmi berbagai merek kendaraan.' },
+  { no: '02', title: 'Wirausaha Bengkel', desc: 'Membuka bengkel umum, spesialis AC, atau usaha suku cadang.' },
+  { no: '03', title: 'Teknisi Industri', desc: 'Quality control dan perakitan di pabrik otomotif.' },
+  { no: '04', title: 'Kuliah Lanjut', desc: 'Ke D3/D4/S1 Teknik Mesin atau Otomotif.' },
 ]
 
-/* ---------- karier ---------- */
-const karierList = [
-  { title: 'Mekanik Dealer Resmi', desc: 'Teknisi servis di bengkel resmi berbagai merek mobil.' },
-  { title: 'Service Advisor', desc: 'Penghubung antara pelanggan dan tim mekanik.' },
-  { title: 'Wirausaha Otomotif', desc: 'Bengkel umum, spesialis AC, atau usaha suku cadang.' },
-  { title: 'Kuliah Lanjut', desc: 'D3/D4/S1 Teknik Otomotif atau Teknik Mesin.' },
+const faqs = [
+  { q: 'Apa syarat mendaftar SPMB di jurusan TKR?', a: 'Lulusan SMP/MTs sederajat, mendaftar melalui aplikasi SPMB sekolah, serta melampirkan fotokopi ijazah/SKL, KK, dan akta kelahiran.' },
+  { q: 'Apakah siswa perempuan boleh masuk TKR?', a: 'Tentu boleh. Materi dan fasilitas praktik terbuka untuk semua siswa, dan banyak alumni perempuan berkarier di dunia otomotif.' },
+  { q: 'Apakah ada sertifikat keahlian?', a: 'Ya. Di kelas XII siswa mengikuti Uji Kompetensi Keahlian (UKK) dan sertifikasi bersama mitra industri.' },
+  { q: 'Di mana siswa melaksanakan PKL?', a: 'Di dealer, bengkel resmi, dan industri otomotif yang menjadi mitra jurusan, dengan pendampingan guru pembimbing.' },
+  { q: 'Apakah tersedia beasiswa?', a: 'Tersedia beasiswa prestasi dan bantuan bagi siswa kurang mampu. Hubungi panitia SPMB untuk informasi lengkap.' },
 ]
+const openFaq = ref(0)
 
-/* ---------- form CTA ---------- */
-const wa = ref('')
-const error = ref('')
-const success = ref('')
-const sending = ref(false)
+/* ---------- Galeri lightbox ---------- */
+const lightbox = ref(null)
 
-async function submit() {
-  error.value = ''
-  success.value = ''
-  const digits = wa.value.replace(/[\s-]/g, '')
-  if (!/^(\+62|62|0)8[0-9]{7,12}$/.test(digits)) {
-    error.value = 'Nomor WhatsApp belum valid. Contoh: 081234567890.'
+/* ---------- Form ---------- */
+const testiForm = useForm({ name: '', graduation_year: '', occupation: '', workplace: '', message: '', rating: 5, website: '' })
+const showTesti = ref(false)
+function submitTesti() {
+  testiForm.post('/testimoni', { preserveScroll: true, onSuccess: () => { testiForm.reset(); showTesti.value = false } })
+}
+const contactForm = useForm({ name: '', email: '', phone: '', subject: '', message: '', website: '' })
+function submitContact() {
+  contactForm.post('/kontak', { preserveScroll: true, onSuccess: () => contactForm.reset() })
+}
+
+const waNumber = computed(() => {
+  const raw = (s.value.whatsapp || s.value.phone || CONFIG.nomorAdmin || '').replace(/\D/g, '')
+  if (!raw || raw.length < 9) return ''
+  return raw.startsWith('0') ? '62' + raw.slice(1) : raw
+})
+const waLink = computed(() => waNumber.value ? `https://wa.me/${waNumber.value}?text=${encodeURIComponent('Halo, saya ingin bertanya tentang pendaftaran Jurusan TKR.')}` : '#kontak')
+
+/* ---------- Form cepat SPMB: simpan pesan + lanjut ke WhatsApp ---------- */
+const waInput = ref('')
+const waErr = ref('')
+const waOk = ref('')
+const waSending = ref(false)
+async function submitWa() {
+  waErr.value = ''
+  waOk.value = ''
+  const digits = String(waInput.value || '').replace(/[\s.-]/g, '')
+  if (!/^(?:\+62|62|0)8[0-9]{7,12}$/.test(digits)) {
+    waErr.value = 'Nomor WhatsApp belum valid. Contoh: 081234567890.'
     return
   }
-
-  const admin = String(s.value.whatsapp || CONFIG.nomorAdmin || '').replace(/\D/g, '').replace(/^0/, '62')
-
-  // Simpan sebagai pesan masuk agar admin melihatnya di panel (fitur yang sama dengan CMS).
-  sending.value = true
+  // Buka WhatsApp lebih dulu, masih di dalam gesture klik, agar tidak diblokir popup blocker.
+  if (waNumber.value) {
+    const text = encodeURIComponent(`Halo, saya ingin mendaftar Jurusan Teknik Kendaraan Ringan. Nomor WhatsApp saya: ${digits}`)
+    window.open(`https://wa.me/${waNumber.value}?text=${text}`, '_blank', 'noopener')
+  }
+  waSending.value = true
   try {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-    await fetch('/kontak', {
+    const res = await fetch('/kontak', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'X-CSRF-TOKEN': csrf,
         'X-Requested-With': 'XMLHttpRequest',
       },
@@ -171,32 +202,135 @@ async function submit() {
         message: `Calon siswa ingin mendaftar Jurusan TKR. Nomor WhatsApp: ${digits}`,
       }),
     })
+    if (!res.ok) throw new Error('gagal')
+    waOk.value = waNumber.value
+      ? 'Membuka WhatsApp admin SPMB. Nomor kamu juga sudah tersimpan.'
+      : 'Nomor WhatsApp kamu sudah kami terima. Tim SPMB akan menghubungi.'
+    waInput.value = ''
   } catch (e) {
-    // Penyimpanan pesan bersifat tambahan; alur WhatsApp tetap bisa dilanjutkan.
+    waOk.value = waNumber.value
+      ? 'Membuka WhatsApp admin SPMB…'
+      : 'Nomor belum terkirim. Coba lagi atau pakai formulir di bawah.'
   } finally {
-    sending.value = false
+    waSending.value = false
   }
-
-  if (admin) {
-    const text = encodeURIComponent(`Halo, saya ingin mendaftar Jurusan Teknik Kendaraan Ringan. Nomor WhatsApp saya: ${digits}`)
-    window.open(`https://wa.me/${admin}?text=${text}`, '_blank', 'noopener')
-    success.value = 'Membuka WhatsApp admin SPMB…'
-  } else {
-    success.value = 'Nomor WhatsApp kamu sudah kami terima. Tim SPMB akan menghubungi.'
-  }
-  wa.value = ''
 }
+
+const logoPath = computed(() => s.value.site_logo || null)
+const logoUrl = computed(() => logoPath.value ? img(logoPath.value) : null)
+const spmbUrl = computed(() => {
+  const u = (s.value.spmb_url || '').trim()
+  return /^https?:\/\//i.test(u) ? u : null
+})
+// Sembunyikan gambar yang gagal dimuat (file terhapus/rusak) agar tidak tampil ikon rusak.
+const hideImg = (e) => { e.target.style.visibility = 'hidden' }
+
+const siteUrl = computed(() => (typeof window !== 'undefined' ? window.location.origin : ''))
+const pageTitle = computed(() => `${s.value.department_name || 'Teknik Kendaraan Ringan'} — ${schoolName.value}`)
+const pageDesc = computed(() => `Jurusan ${s.value.department_name || 'Teknik Kendaraan Ringan'} ${schoolName.value}: kompetensi keahlian, program unggulan, sarana praktik, prestasi, berita, dan testimoni alumni. ${address.value}.`)
+const ogImage = computed(() => {
+  const p = s.value.hero_bg || s.value.site_logo
+  if (!p) return null
+  return /^https?:/i.test(p) ? p : siteUrl.value + '/storage/' + p
+})
+
+const socials = computed(() => [
+  { key: 'instagram_url', label: 'Instagram' },
+  { key: 'facebook_url', label: 'Facebook' },
+  { key: 'youtube_url', label: 'YouTube' },
+  { key: 'tiktok_url', label: 'TikTok' },
+].filter(x => s.value[x.key]).map(x => ({ ...x, url: s.value[x.key] })))
+
+/* ---------- Scroll / reveal ---------- */
+let io = null
+function observeReveal() {
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const els = document.querySelectorAll('.tkr .reveal:not(.is-in)')
+  if (reduce || !('IntersectionObserver' in window)) { els.forEach(el => el.classList.add('is-in')); return }
+  if (!io) {
+    io = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return
+        const siblings = [...entry.target.parentElement.children].filter(c => c.classList.contains('reveal'))
+        entry.target.style.transitionDelay = `${Math.min(6, Math.max(0, siblings.indexOf(entry.target))) * 60}ms`
+        entry.target.classList.add('is-in')
+        io.unobserve(entry.target)
+      })
+    }, { threshold: 0.1 })
+  }
+  els.forEach(el => io.observe(el))
+}
+// Item baru setelah ganti tab langsung tampil
+watch([postCat, facCat], () => nextTick(() => document.querySelectorAll('.tkr .reveal:not(.is-in)').forEach(el => el.classList.add('is-in'))))
+watch(lightbox, (v) => { if (typeof document !== 'undefined') document.body.style.overflow = v ? 'hidden' : '' })
+const onKey = (e) => { if (e.key === 'Escape' && lightbox.value) lightbox.value = null }
+
+// Data terstruktur untuk mesin pencari (Google) — disuntik saat komponen terpasang.
+function injectJsonLd() {
+  if (typeof document === 'undefined') return
+  document.getElementById('ld-school')?.remove()
+  const el = document.createElement('script')
+  el.type = 'application/ld+json'
+  el.id = 'ld-school'
+  el.textContent = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'School',
+    name: schoolName.value,
+    alternateName: s.value.department_name || undefined,
+    url: siteUrl.value + '/',
+    logo: logoPath.value ? siteUrl.value + img(logoPath.value) : undefined,
+    image: ogImage.value || undefined,
+    telephone: s.value.phone || undefined,
+    email: s.value.email || undefined,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: s.value.address || '',
+      addressLocality: s.value.city || undefined,
+      addressRegion: s.value.province || undefined,
+      addressCountry: 'ID',
+    },
+    sameAs: socials.value.map(x => x.url),
+  })
+  document.head.appendChild(el)
+}
+
+const showTop = ref(false)
+const scrolled = ref(false)
+const onScroll = () => {
+  scrolled.value = window.scrollY > 8
+  showTop.value = window.scrollY > 480
+}
+function toTop() {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+}
+
+onMounted(() => {
+  onScroll()
+  window.addEventListener('scroll', onScroll, { passive: true })
+  observeReveal()
+  injectJsonLd()
+  document.addEventListener('keydown', onKey)
+  if (headlines.value.length > 1) slideTimer = setInterval(() => goSlide(slideIdx.value + 1), 6000)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onScroll)
+  io?.disconnect()
+  clearInterval(slideTimer)
+  document.removeEventListener('keydown', onKey)
+  document.body.style.overflow = ''
+})
 </script>
 
 <template>
   <div class="tkr">
     <Head>
-      <title>{{ title }}</title>
-      <meta name="description" :content="metaDesc" />
-      <meta property="og:title" :content="title" />
-      <meta property="og:description" :content="metaDesc" />
+      <title>{{ pageTitle }}</title>
+      <!-- Meta deskripsi, canonical, Open Graph, dan Twitter Card dirender server-side
+           di resources/views/app.blade.php agar tetap terbaca crawler tanpa JavaScript. -->
     </Head>
 
+    <!-- ================= HERO ================= -->
     <header class="hero grid-ice">
       <nav class="tkr-nav" :class="{ scrolled }" aria-label="Navigasi utama">
         <div class="container nav-inner">
@@ -211,7 +345,7 @@ async function submit() {
             </span>
             <span class="brand-text">
               <strong>TKR</strong>
-              <span>{{ school }}</span>
+              <span>{{ schoolName }}</span>
             </span>
           </a>
 
@@ -221,7 +355,7 @@ async function submit() {
 
           <div class="nav-actions">
             <a class="btn btn-secondary" href="#kontak">Kontak</a>
-            <a class="btn btn-primary" href="#daftar">Daftar Sekarang</a>
+            <a class="btn btn-primary" href="#spmb">Daftar Sekarang</a>
             <button type="button" class="nav-burger" :aria-expanded="menuOpen" aria-label="Buka menu" @click="menuOpen = !menuOpen">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
                 <path v-if="!menuOpen" d="M4 7h16M4 12h16M4 17h16" />
@@ -236,7 +370,7 @@ async function submit() {
             <a v-for="l in navLinks" :key="l.href" :href="l.href" @click="closeMenu">{{ l.label }}</a>
             <div class="nav-actions">
               <a class="btn btn-secondary" href="#kontak" @click="closeMenu">Kontak</a>
-              <a class="btn btn-primary" href="#daftar" @click="closeMenu">Daftar Sekarang</a>
+              <a class="btn btn-primary" href="#spmb" @click="closeMenu">Daftar Sekarang</a>
             </div>
           </div>
         </div>
@@ -245,22 +379,29 @@ async function submit() {
       <div id="top" class="container hero-content">
         <div class="hero-text">
           <span class="hero-badge">SPMB {{ tahun }} · KUOTA TERBATAS</span>
-          <h1>Teknik Kendaraan Ringan<span class="dot">.</span></h1>
-          <p class="hero-sub">Kuasai teknologi mobil masa kini, dari mesin hingga kendaraan listrik.</p>
-          <p class="hero-lead">Belajar diagnosis, perawatan, dan perbaikan mobil di bengkel praktik berstandar industri, bersama guru produktif dan mitra dealer resmi.</p>
+          <transition name="fade" mode="out-in">
+            <h1 :key="slideIdx">{{ current.title }}<span class="dot">.</span></h1>
+          </transition>
+          <p class="hero-sub">{{ current.subtitle || 'Kuasai teknologi kendaraan ringan masa kini, dari mesin hingga kendaraan listrik.' }}</p>
+          <p class="hero-lead">{{ s.site_tagline || 'Belajar diagnosis, perawatan, dan perbaikan kendaraan di bengkel praktik berstandar industri, bersama guru produktif dan mitra dealer resmi.' }}</p>
 
           <div class="hero-actions">
-            <a class="btn btn-primary btn-hero" href="#daftar">
+            <a class="btn btn-primary btn-hero" href="#spmb">
               Daftar Sekarang
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
             </a>
-            <a class="btn btn-secondary btn-hero" href="#kompetensi">Jelajahi Kompetensi</a>
+            <a :href="safeHref(current.button_url)" class="btn btn-secondary btn-hero">{{ current.button_text || 'Jelajahi Kompetensi' }}</a>
+          </div>
+
+          <div v-if="headlines.length > 1" class="hero-dots" aria-label="Pilih headline">
+            <button v-for="(h, i) in headlines" :key="i" type="button" :class="{ on: i === slideIdx }"
+              :aria-label="`Headline ${i + 1}`" @click="goSlide(i)"></button>
           </div>
 
           <div class="stats">
-            <div v-for="st in statCards" :key="st.label" class="stat">
+            <div v-for="st in heroStats" :key="st.label" class="stat">
               <b>{{ st.value }}</b>
               <span>{{ st.label }}</span>
             </div>
@@ -271,173 +412,482 @@ async function submit() {
           <EfiScan />
         </div>
       </div>
+
+      <!-- Ticker info terkini -->
+      <div v-if="ticker.length" class="ticker">
+        <div class="container ticker-inner">
+          <span class="ticker-label">INFO TERKINI</span>
+          <div class="ticker-track">
+            <div class="ticker-move">
+              <Link v-for="(p, i) in [...ticker, ...ticker]" :key="i" :href="`/berita/${p.slug}`"
+                :aria-hidden="i >= ticker.length ? 'true' : null" :tabindex="i >= ticker.length ? -1 : null">
+                <b>{{ p.category?.name }}</b>{{ p.title }}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
 
     <main>
-      <!-- Mitra -->
-      <section class="mitra" aria-label="Mitra dealer dan industri">
+      <!-- ================= MITRA ================= -->
+      <section v-if="partners.length" class="mitra" aria-label="Mitra industri">
         <div class="container mitra-inner">
-          <span class="mitra-label">MITRA DEALER &amp; INDUSTRI</span>
-          <div class="mitra-row">
-            <div v-for="(m, i) in mitraList" :key="i" class="mitra-logo">
-              <img v-if="m.logo" :src="img(m.logo)" :alt="m.name" loading="lazy" />
-              <span v-else>{{ m.name }}</span>
-            </div>
+          <span class="mitra-label">MITRA INDUSTRI &amp; DUDI</span>
+          <div class="marquee">
+            <ul class="marquee-move">
+              <li v-for="(m, i) in [...partners, ...partners]" :key="i" class="mitra-logo" :title="m.name"
+                :aria-hidden="i >= partners.length ? 'true' : null">
+                <img v-if="m.logo" :src="img(m.logo)" :alt="m.name" loading="lazy" @error="hideImg" />
+                <span v-else>{{ m.name }}</span>
+              </li>
+            </ul>
           </div>
         </div>
       </section>
 
-      <!-- Kompetensi -->
-      <section id="kompetensi" class="section">
-        <div class="container">
-          <div class="section-head">
-            <div>
-              <span class="mono-label">[01] KOMPETENSI KEAHLIAN</span>
-              <h2>Enam bidang yang kamu kuasai di TKR.</h2>
-            </div>
-            <p class="aside">Kurikulum disusun bersama dunia industri, dengan porsi praktik langsung pada unit mobil nyata.</p>
+      <!-- ================= TENTANG + SAMBUTAN ================= -->
+      <section id="tentang" class="section">
+        <div class="container about-wrap">
+          <div v-if="s.about_image" class="about-media reveal">
+            <img :src="img(s.about_image)" alt="Tentang jurusan TKR" loading="lazy" @error="hideImg" />
           </div>
+          <div class="about-text reveal">
+            <span class="mono-label">TENTANG JURUSAN</span>
+            <h2>{{ s.department_name || 'Teknik Kendaraan Ringan' }}</h2>
+            <div class="about-body" v-html="s.about_text"></div>
+            <blockquote v-if="kajur" class="sambutan">
+              <p>“{{ sambutan }}”</p>
+              <footer>
+                <img v-if="kajur.photo" :src="img(kajur.photo)" :alt="kajur.name" loading="lazy" @error="hideImg" />
+                <span><b>{{ kajur.name }}</b><small>{{ kajur.position }}</small></span>
+              </footer>
+            </blockquote>
+            <Link href="/profil" class="btn btn-outline btn-sm">Profil lengkap jurusan →</Link>
+          </div>
+        </div>
+      </section>
 
+      <!-- ================= KOMPETENSI ================= -->
+      <section id="kompetensi" class="section section-tint">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="mono-label">KOMPETENSI KEAHLIAN</span>
+              <h2>Apa saja yang kamu pelajari di TKR?</h2>
+            </div>
+            <Link href="/kompetensi" class="btn btn-outline btn-sm">Semua kompetensi →</Link>
+          </div>
           <div class="komp-grid">
-            <article v-for="(k, i) in kompList" :key="k.title" class="komp-card"
-              :class="{ 'is-blue': i === 1, 'is-sky': i === 5 }">
+            <Link v-for="(k, i) in competencies" :key="k.id" :href="`/kompetensi/${k.slug}`"
+              class="komp-card reveal" :class="{ 'is-blue': i === 1 }">
               <div class="komp-top">
                 <span class="komp-icon">
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" v-html="ICONS[k.icon] || ICONS.engine" />
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" v-html="icon(k.icon)" />
                 </span>
-                <span class="komp-num">{{ kompNum(i) }}<template v-if="i === 5"> · BARU</template></span>
+                <span class="komp-num">{{ kompNum(i) }}</span>
               </div>
               <h3>{{ k.title }}</h3>
-              <p>{{ k.desc }}</p>
-            </article>
+              <p>{{ k.short_description }}</p>
+            </Link>
           </div>
         </div>
       </section>
 
-      <!-- Alur belajar -->
-      <section id="alur" class="section" style="padding-top: 0">
+      <!-- ================= ALUR ================= -->
+      <section id="alur" class="section grid-ice">
         <div class="container">
           <div class="panel grid-blue">
-            <span class="mono-label on-blue">[02] ALUR BELAJAR</span>
-            <h2>Tiga tahun, satu jalur menuju bengkel profesional.</h2>
-
+            <span class="mono-label on-blue">ALUR BELAJAR</span>
+            <h2>Tiga tahun, dari dasar hingga siap terjun ke bengkel.</h2>
             <div class="alur-grid">
-              <article v-for="a in alurList" :key="a.roman" class="alur-card" :class="{ 'is-white': a.white }">
+              <article v-for="st in alur" :key="st.label" class="alur-card reveal" :class="{ 'is-white': st.dark }">
                 <div class="alur-top">
-                  <span class="alur-num">{{ a.roman }}</span>
+                  <span class="alur-step">{{ st.label }}</span>
                   <span class="alur-rule" aria-hidden="true"></span>
                 </div>
-                <h3>{{ a.title }}</h3>
-                <p>{{ a.desc }}</p>
+                <h3>{{ st.title }}</h3>
+                <p>{{ st.desc }}</p>
               </article>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Fasilitas -->
-      <section id="fasilitas" class="section">
+      <!-- ================= PROGRAM UNGGULAN ================= -->
+      <section id="program" class="section">
         <div class="container">
-          <div class="section-head">
+          <div class="section-head reveal">
             <div>
-              <span class="mono-label">[03] FASILITAS</span>
-              <h2>Bengkel yang terasa seperti dealer resmi.</h2>
+              <span class="mono-label">PROGRAM UNGGULAN</span>
+              <h2>Lebih dari sekadar belajar di kelas.</h2>
             </div>
+            <Link href="/program" class="btn btn-outline btn-sm">Semua program →</Link>
           </div>
-
-          <div class="fas-grid">
-            <article v-for="(f, i) in fasList" :key="f.name" class="fas-card"
-              :class="{ 'is-blue': i === 3, 'has-img': !!f.image }">
-              <img v-if="f.image" :src="img(f.image)" :alt="f.name" loading="lazy" />
-              <span class="fas-caption">[FOTO]</span>
-              <h3>{{ f.name }}</h3>
-              <p>{{ f.description }}</p>
+          <div class="prog-grid">
+            <article v-for="p in programs" :key="p.id" class="prog-card reveal">
+              <div class="prog-img">
+                <img v-if="p.image" :src="img(p.image)" :alt="p.title" loading="lazy" @error="hideImg" />
+                <span class="prog-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" v-html="icon(p.icon)" />
+                </span>
+              </div>
+              <div class="prog-body">
+                <span v-if="p.subtitle" class="mono-label">{{ p.subtitle }}</span>
+                <h3>{{ p.title }}</h3>
+                <p>{{ p.description }}</p>
+              </div>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- Karier -->
-      <section id="karier" class="karier grid-ice">
+      <!-- ================= SARANA ================= -->
+      <section id="sarana" class="section section-tint">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="mono-label">SARANA &amp; PRASARANA</span>
+              <h2>Bengkel praktik berstandar industri.</h2>
+            </div>
+            <div class="chips">
+              <Link href="/sarana" class="chip">Lihat halaman sarana →</Link>
+              <button v-for="c in facCats" :key="c" type="button" class="chip" :class="{ on: facCat === c }" @click="facCat = c">{{ c }}</button>
+            </div>
+          </div>
+          <div class="fac-grid">
+            <article v-for="(f, i) in facList" :key="f.id" class="fac-card reveal" :class="{ big: i === 0 }">
+              <img v-if="f.image" :src="img(f.image)" :alt="f.name" loading="lazy" @error="hideImg" />
+              <div class="fac-info">
+                <span class="mono-label accent">{{ f.category }}</span>
+                <h3>{{ f.name }}</h3>
+                <p v-if="f.quantity" class="fac-meta">{{ f.quantity }} unit<span v-if="f.condition"> · {{ f.condition }}</span></p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PRESTASI ================= -->
+      <section id="prestasi" class="section grid-blue section-dark">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="mono-label accent">PRESTASI</span>
+              <h2>Bukti kompetensi di ajang lomba.</h2>
+            </div>
+            <Link href="/prestasi" class="btn btn-ghost btn-sm">Semua {{ stats.achievements }} prestasi →</Link>
+          </div>
+          <div class="ach-grid">
+            <article v-for="a in achievements" :key="a.id" class="ach-card reveal">
+              <div class="ach-img">
+                <img v-if="a.image" :src="img(a.image)" :alt="a.title" loading="lazy" @error="hideImg" />
+                <span v-if="a.rank" class="ach-rank">{{ a.rank }}</span>
+              </div>
+              <div class="ach-body">
+                <span class="ach-level">{{ a.level || 'Umum' }}<template v-if="a.year"> · {{ a.year }}</template></span>
+                <h3>{{ a.title }}</h3>
+                <p>{{ a.student_name }}<span v-if="a.organizer"> — {{ a.organizer }}</span></p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= BERITA TERKINI ================= -->
+      <section id="berita" class="section">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="mono-label">BERITA TERKINI</span>
+              <h2>Kabar dari jurusan.</h2>
+            </div>
+            <Link href="/berita" class="btn btn-outline btn-sm">Semua berita →</Link>
+          </div>
+          <div class="chips chips-row reveal" aria-label="Kategori berita">
+            <button type="button" class="chip" :class="{ on: postCat === 'semua' }" @click="postCat = 'semua'">Semua</button>
+            <button v-for="c in categories" :key="c.id" type="button" class="chip" :class="{ on: postCat === c.slug }" @click="postCat = c.slug">
+              <i :style="{ background: c.color }"></i>{{ c.name }} <small>{{ c.posts_count }}</small>
+            </button>
+          </div>
+
+          <div v-if="featuredPost" class="news-wrap">
+            <Link :href="`/berita/${featuredPost.slug}`" class="news-feature reveal">
+              <img v-if="featuredPost.cover_image" :src="img(featuredPost.cover_image)" :alt="featuredPost.cover_alt || featuredPost.title" loading="lazy" @error="hideImg" />
+              <div class="news-feature-body">
+                <span class="cat-tag" :style="{ background: featuredPost.category?.color }">{{ featuredPost.category?.name }}</span>
+                <h3>{{ featuredPost.title }}</h3>
+                <p>{{ featuredPost.excerpt }}</p>
+                <small>{{ fmtDate(featuredPost.published_at) }}<span v-if="featuredPost.reading_time"> · {{ featuredPost.reading_time }} menit baca</span></small>
+              </div>
+            </Link>
+            <div class="news-list">
+              <Link v-for="p in otherPosts" :key="p.id" :href="`/berita/${p.slug}`" class="news-item reveal">
+                <img v-if="p.cover_image" :src="img(p.cover_image)" :alt="p.cover_alt || p.title" loading="lazy" @error="hideImg" />
+                <div>
+                  <span class="cat-text" :style="{ color: p.category?.color }">{{ p.category?.name }}</span>
+                  <h4>{{ p.title }}</h4>
+                  <small>{{ fmtDate(p.published_at) }}</small>
+                </div>
+              </Link>
+            </div>
+          </div>
+          <p v-else class="empty">Belum ada tulisan di kategori ini.</p>
+        </div>
+      </section>
+
+      <!-- ================= GALERI ================= -->
+      <section v-if="gallery.length" id="galeri" class="section section-tint">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="mono-label">GALERI</span>
+              <h2>Suasana belajar di TKR.</h2>
+            </div>
+          </div>
+          <div class="gal-grid">
+            <button v-for="g in gallery" :key="g.id" type="button" class="gal-item reveal" @click="lightbox = g">
+              <img :src="img(g.file)" :alt="g.title || g.caption || 'Galeri'" loading="lazy" @error="hideImg" />
+              <span>{{ g.album || g.title }}</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= GURU ================= -->
+      <section v-if="teachers.length" id="guru" class="section">
+        <div class="container">
+          <div class="section-head reveal">
+            <div>
+              <span class="mono-label">GURU &amp; INSTRUKTUR</span>
+              <h2>Dibimbing praktisi berpengalaman.</h2>
+            </div>
+            <Link href="/guru" class="btn btn-outline btn-sm">Semua guru →</Link>
+          </div>
+          <div class="teach-grid">
+            <article v-for="t in teachers" :key="t.id" class="teach-card reveal">
+              <img v-if="t.photo" :src="img(t.photo)" :alt="t.name" loading="lazy" @error="hideImg" />
+              <h3>{{ t.name }}</h3>
+              <span class="mono-label">{{ t.position }}</span>
+              <p>{{ t.subject }}</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= KARIER ================= -->
+      <section id="karier" class="section section-tint">
         <div class="container karier-layout">
-          <div class="karier-copy">
-            <span class="mono-label">[04] PROSPEK KARIER</span>
-            <h2>Setelah lulus, jalanmu terbuka lebar.</h2>
-            <p>Industri otomotif terus butuh teknisi yang paham sistem konvensional maupun teknologi baru.</p>
+          <div class="karier-copy reveal">
+            <span class="mono-label">PROSPEK KARIER</span>
+            <h2>Lulus, lalu ke mana?</h2>
+            <p>Keahlian otomotif kendaraan ringan dibutuhkan di banyak jalur, baik bekerja, membuka usaha, maupun melanjutkan studi.</p>
           </div>
           <div class="karier-grid">
-            <article v-for="k in karierList" :key="k.title" class="karier-card">
-              <h3>{{ k.title }}</h3>
-              <p>{{ k.desc }}</p>
+            <article v-for="c in karier" :key="c.no" class="karier-card reveal">
+              <span class="karier-no">{{ c.no }}</span>
+              <div><h3>{{ c.title }}</h3><p>{{ c.desc }}</p></div>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- CTA -->
-      <section id="daftar" class="cta-wrap" style="padding-top: 104px">
+      <!-- ================= UMPAN BALIK LULUSAN ================= -->
+      <section id="alumni" class="section">
         <div class="container">
-          <div class="panel grid-blue cta-panel">
+          <div class="section-head reveal">
+            <div>
+              <span class="mono-label">UMPAN BALIK LULUSAN</span>
+              <h2>Kata alumni tentang TKR.</h2>
+            </div>
+            <div class="head-actions">
+              <button type="button" class="btn btn-outline btn-sm" @click="showTesti = !showTesti">{{ showTesti ? 'Tutup formulir' : 'Kirim testimoni' }}</button>
+              <Link href="/alumni" class="btn btn-primary btn-sm">Semua testimoni →</Link>
+            </div>
+          </div>
+
+          <p v-if="flash.success && !showTesti" class="form-ok" role="status">{{ flash.success }}</p>
+          <form v-if="showTesti" class="lp-form testi-form" @submit.prevent="submitTesti">
+            <input v-model="testiForm.website" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hidden" />
+            <div class="form-grid">
+              <label>Nama lengkap<input v-model="testiForm.name" required maxlength="150" /></label>
+              <label>Tahun lulus<input v-model="testiForm.graduation_year" type="number" min="2000" :max="new Date().getFullYear()" required /></label>
+              <label>Pekerjaan<input v-model="testiForm.occupation" maxlength="150" /></label>
+              <label>Tempat kerja / kuliah<input v-model="testiForm.workplace" maxlength="150" /></label>
+              <label class="full">Pesan &amp; kesan<textarea v-model="testiForm.message" rows="3" required maxlength="1000"></textarea></label>
+              <div class="full rating-pick">
+                <span>Penilaian:</span>
+                <button v-for="n in 5" :key="n" type="button" :class="{ on: n <= testiForm.rating }" :aria-label="`${n} bintang`" @click="testiForm.rating = n">★</button>
+              </div>
+            </div>
+            <p v-for="(e, k) in testiForm.errors" :key="k" class="form-err">{{ e }}</p>
+            <button type="submit" class="btn btn-primary btn-sm" :disabled="testiForm.processing">Kirim testimoni</button>
+          </form>
+
+          <div class="testi-grid">
+            <figure v-for="t in testimonials" :key="t.id" class="testi-card reveal">
+              <div class="stars" :aria-label="`${t.rating} dari 5 bintang`">
+                <span v-for="n in 5" :key="n" :class="{ on: n <= t.rating }">★</span>
+              </div>
+              <blockquote>“{{ t.message }}”</blockquote>
+              <figcaption>
+                <img v-if="t.photo" :src="img(t.photo)" :alt="t.name" loading="lazy" @error="hideImg" />
+                <span v-else class="avatar">{{ t.name?.[0] }}</span>
+                <span><b>{{ t.name }}</b><small>Lulusan {{ t.graduation_year }}<template v-if="t.occupation"> · {{ t.occupation }}</template><template v-if="t.workplace">, {{ t.workplace }}</template></small></span>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= FAQ ================= -->
+      <section id="faq" class="section section-tint">
+        <div class="container faq-wrap">
+          <div class="faq-intro reveal">
+            <span class="mono-label">FAQ</span>
+            <h2>Pertanyaan yang sering diajukan.</h2>
+          </div>
+          <div class="faq-list reveal">
+            <div v-for="(f, i) in faqs" :key="i" class="faq-item" :class="{ open: openFaq === i }">
+              <button type="button" :aria-expanded="openFaq === i" @click="openFaq = openFaq === i ? -1 : i">
+                {{ f.q }}<span aria-hidden="true">{{ openFaq === i ? '−' : '+' }}</span>
+              </button>
+              <p v-show="openFaq === i">{{ f.a }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= CTA / SPMB ================= -->
+      <section id="spmb" class="section section-cta">
+        <div class="container">
+          <div class="panel grid-blue cta-panel reveal">
             <div class="cta-copy">
-              <h2>Nyalakan mesinmu. <span>Daftar TKR.</span></h2>
-              <p>Isi nomor WhatsApp, tim SPMB akan menghubungimu. Pendaftaran ditutup {{ tanggalTutup }}.</p>
+              <span class="mono-label on-blue">SPMB — SISTEM PENERIMAAN MURID BARU</span>
+              <h2>Siap jadi <span>teknisi kendaraan ringan?</span></h2>
+              <p>{{ s.spmb_open === '1' ? (s.spmb_info || 'Pendaftaran SPMB sudah dibuka.') : 'Pendaftaran SPMB belum dibuka. Pantau terus pengumuman terbaru dari kami.' }} Daftar online sekarang atau tanya panitia lewat WhatsApp.</p>
+              <div class="cta-actions">
+                <a v-if="spmbUrl" :href="spmbUrl" target="_blank" rel="noopener" class="btn btn-white">Daftar SPMB</a>
+                <a v-else href="#kontak" class="btn btn-white">Tanya panitia SPMB</a>
+                <a v-if="waNumber" :href="waLink" class="btn btn-ghost" target="_blank" rel="noopener">Tanya via WhatsApp</a>
+                <a v-else href="#kontak" class="btn btn-ghost">Kirim pesan</a>
+              </div>
             </div>
 
-            <form class="cta-form" novalidate @submit.prevent="submit">
-              <label class="sr-only" for="tkr-wa">Nomor WhatsApp</label>
-              <input id="tkr-wa" v-model="wa" class="cta-input" :class="{ invalid: !!error }"
+            <form class="cta-form" novalidate @submit.prevent="submitWa">
+              <span class="cta-form-label">Daftar cepat lewat WhatsApp</span>
+              <label class="sr-only" for="cta-wa">Nomor WhatsApp</label>
+              <input id="cta-wa" v-model="waInput" class="cta-input" :class="{ invalid: !!waErr }"
                 type="tel" inputmode="tel" autocomplete="tel" placeholder="08xx-xxxx-xxxx" />
-              <button type="submit" class="btn btn-white cta-submit" :disabled="sending">
-                {{ sending ? 'Mengirim…' : 'Daftar Sekarang' }}
+              <button type="submit" class="btn btn-white cta-submit" :disabled="waSending">
+                {{ waSending ? 'Mengirim…' : 'Daftar Sekarang' }}
               </button>
-              <p v-if="error" class="cta-error" role="alert">{{ error }}</p>
-              <p v-if="success" class="cta-ok" role="status">{{ success }}</p>
+              <p v-if="waErr" class="cta-error" role="alert">{{ waErr }}</p>
+              <p v-if="waOk" class="cta-ok" role="status">{{ waOk }}</p>
             </form>
           </div>
         </div>
       </section>
+
+      <!-- ================= KONTAK ================= -->
+      <section id="kontak" class="section">
+        <div class="container contact-wrap">
+          <div class="contact-info reveal">
+            <span class="mono-label">HUBUNGI KAMI</span>
+            <h2>Kunjungi atau hubungi kami.</h2>
+            <ul>
+              <li><b>Alamat</b>{{ address }}</li>
+              <li v-if="s.phone"><b>Telepon</b>{{ s.phone }}</li>
+              <li v-if="s.email"><b>Email</b><a :href="`mailto:${s.email}`">{{ s.email }}</a></li>
+            </ul>
+            <div v-if="s.maps_embed" class="map" v-html="s.maps_embed"></div>
+          </div>
+          <form class="lp-form contact-form reveal" @submit.prevent="submitContact">
+            <input v-model="contactForm.website" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hidden" />
+            <div class="form-grid">
+              <label>Nama<input v-model="contactForm.name" required maxlength="150" /></label>
+              <label>No. WhatsApp<input v-model="contactForm.phone" type="tel" maxlength="20" /></label>
+              <label class="full">Email<input v-model="contactForm.email" type="email" maxlength="150" /></label>
+              <label class="full">Subjek<input v-model="contactForm.subject" maxlength="200" /></label>
+              <label class="full">Pesan<textarea v-model="contactForm.message" rows="5" required maxlength="2000"></textarea></label>
+            </div>
+            <p v-for="(e, k) in contactForm.errors" :key="k" class="form-err">{{ e }}</p>
+            <p v-if="contactForm.wasSuccessful" class="form-ok" role="status">Pesan terkirim. Terima kasih!</p>
+            <button type="submit" class="btn btn-primary btn-sm" :disabled="contactForm.processing">Kirim pesan</button>
+          </form>
+        </div>
+      </section>
     </main>
 
-    <footer id="kontak" class="footer">
+    <!-- ================= FOOTER ================= -->
+    <footer class="footer">
       <div class="container">
         <div class="footer-grid">
           <div class="footer-brand">
-            <strong>Teknik Kendaraan Ringan</strong>
-            <span>{{ school }}</span>
-            <span>{{ s.address || CONFIG.alamat }}</span>
+            <div class="footer-logo">
+              <img v-if="logoUrl" :src="logoUrl" alt="" width="30" height="30" @error="hideImg" />
+              <svg v-else width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 19l3-7a3 3 0 0 1 2.8-2h12.4a3 3 0 0 1 2.8 2l3 7v5H4z" />
+                <path d="M4 19h24" />
+                <circle cx="10" cy="24" r="2.5" fill="currentColor" stroke="none" />
+                <circle cx="22" cy="24" r="2.5" fill="currentColor" stroke="none" />
+              </svg>
+              <span>{{ s.site_name || s.department_name || 'Teknik Kendaraan Ringan' }}</span>
+            </div>
+            <p>{{ schoolName }}<br />{{ address }}</p>
+            <div v-if="socials.length" class="socials">
+              <a v-for="so in socials" :key="so.key" :href="so.url" target="_blank" rel="noopener">{{ so.label }}</a>
+            </div>
           </div>
-
           <div class="footer-cols">
             <div class="footer-col">
               <h4>JURUSAN</h4>
               <ul>
                 <li><a href="#kompetensi">Kompetensi</a></li>
-                <li><a href="#fasilitas">Fasilitas</a></li>
-                <li><a href="#karier">Prospek Karier</a></li>
+                <li><a href="#program">Program Unggulan</a></li>
+                <li><a href="#sarana">Sarana</a></li>
+                <li><a href="#prestasi">Prestasi</a></li>
+              </ul>
+            </div>
+            <div class="footer-col">
+              <h4>INFORMASI</h4>
+              <ul>
+                <li><Link href="/berita">Semua Berita</Link></li>
+                <li v-for="c in categories.slice(0, 4)" :key="c.id"><Link :href="`/berita?kategori=${c.slug}`">{{ c.name }}</Link></li>
+                <li v-if="spmbUrl"><a :href="spmbUrl" target="_blank" rel="noopener">SPMB</a></li>
               </ul>
             </div>
             <div class="footer-col">
               <h4>KONTAK</h4>
               <ul>
-                <li>
-                  <a v-if="s.phone" :href="`tel:${s.phone}`">{{ s.phone }}</a>
-                  <span v-else>{{ CONFIG.telepon }}</span>
-                </li>
-                <li>
-                  <a v-if="s.email" :href="`mailto:${s.email}`">{{ s.email }}</a>
-                  <span v-else>{{ CONFIG.email }}</span>
-                </li>
-                <li>
-                  <a v-if="s.instagram_url" :href="s.instagram_url" target="_blank" rel="noopener">Instagram</a>
-                  <span v-else>{{ CONFIG.instagram }}</span>
-                </li>
+                <li v-if="s.phone"><a :href="`tel:${s.phone}`">{{ s.phone }}</a></li>
+                <li v-if="s.email"><a :href="`mailto:${s.email}`">{{ s.email }}</a></li>
+                <li v-if="!s.phone && !s.email"><a href="#kontak">Formulir kontak</a></li>
               </ul>
             </div>
           </div>
         </div>
-
-        <div class="footer-bottom">© 2026 Jurusan Teknik Kendaraan Ringan — {{ school }}</div>
+        <div class="footer-bottom">{{ s.footer_text || `© ${new Date().getFullYear()} Jurusan Teknik Kendaraan Ringan — ${schoolName}` }}</div>
       </div>
     </footer>
+
+    <!-- Lightbox galeri -->
+    <div v-if="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Pratinjau galeri" @click.self="lightbox = null">
+      <button type="button" class="lb-close" aria-label="Tutup" @click="lightbox = null">×</button>
+      <img :src="img(lightbox.file)" :alt="lightbox.title" />
+      <p>{{ lightbox.caption || lightbox.title }}</p>
+    </div>
+
+    <!-- Kembali ke atas -->
+    <button v-if="showTop" type="button" class="to-top" @click="toTop" aria-label="Kembali ke atas" title="Kembali ke atas">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></svg>
+    </button>
+
+    <!-- Tombol WA melayang -->
+    <a v-if="waNumber" :href="waLink" class="wa-float" target="_blank" rel="noopener" aria-label="Chat WhatsApp">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l2 .9c.3.1.5.2.5.3.1.2.1.7-.2 1.4z" /></svg>
+    </a>
   </div>
 </template>

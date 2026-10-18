@@ -50,7 +50,7 @@ class DatabaseSeeder extends Seeder
             ['key' => 'address', 'value' => '[Alamat lengkap sekolah]', 'group' => 'profil', 'type' => 'textarea', 'label' => 'Alamat'],
             ['key' => 'phone', 'value' => '[No. telepon / WA]', 'group' => 'profil', 'type' => 'text', 'label' => 'Telepon'],
             ['key' => 'whatsapp', 'value' => '', 'group' => 'kontak', 'type' => 'text', 'label' => 'Nomor WhatsApp admin SPMB (contoh: 081234567890)'],
-            ['key' => 'email', 'value' => '[Email sekolah]', 'group' => 'profil', 'type' => 'text', 'label' => 'Email'],
+            ['key' => 'email', 'value' => 'info@sekolah.example', 'group' => 'profil', 'type' => 'text', 'label' => 'Email'],
             ['key' => 'maps_embed', 'value' => '', 'group' => 'profil', 'type' => 'textarea', 'label' => 'Google Maps Embed'],
             ['key' => 'facebook_url', 'value' => '', 'group' => 'sosmed', 'type' => 'text', 'label' => 'Facebook URL'],
             ['key' => 'instagram_url', 'value' => '', 'group' => 'sosmed', 'type' => 'text', 'label' => 'Instagram URL'],
@@ -73,8 +73,11 @@ class DatabaseSeeder extends Seeder
 
 Kami berkomitmen membekali setiap siswa dengan keterampilan nyata, karakter yang kuat, dan kesiapan kerja agar mampu bersaing di dunia industri otomotif.', 'group' => 'profil', 'type' => 'textarea', 'label' => 'Sambutan Kepala Jurusan'],
             ['key' => 'profile_history', 'value' => '', 'group' => 'profil', 'type' => 'textarea', 'label' => 'Sejarah Jurusan'],
-            ['key' => 'profile_vision', 'value' => '', 'group' => 'profil', 'type' => 'textarea', 'label' => 'Visi'],
-            ['key' => 'profile_mission', 'value' => '', 'group' => 'profil', 'type' => 'textarea', 'label' => 'Misi (satu poin per baris)'],
+            ['key' => 'profile_vision', 'value' => 'Menjadi program keahlian Teknik Kendaraan Ringan yang unggul, berkarakter Islami, dan menghasilkan lulusan siap kerja serta berwirausaha.', 'group' => 'profil', 'type' => 'textarea', 'label' => 'Visi'],
+            ['key' => 'profile_mission', 'value' => 'Menyelenggarakan pembelajaran berbasis praktik sesuai standar industri otomotif.
+Membekali siswa dengan kompetensi engine, chassis, pemindah tenaga, dan kelistrikan kendaraan.
+Menanamkan sikap disiplin, keselamatan kerja (K3), dan budaya mutu.
+Menjalin kemitraan dengan bengkel, dealer, dan industri kendaraan ringan.', 'group' => 'profil', 'type' => 'textarea', 'label' => 'Misi (satu poin per baris)'],
             ['key' => 'profile_structure_image', 'value' => '', 'group' => 'profil', 'type' => 'image', 'label' => 'Struktur Organisasi'],
 
             ['key' => 'spmb_open', 'value' => '1', 'group' => 'spmb', 'type' => 'boolean', 'label' => 'SPMB Dibuka'],
@@ -159,6 +162,85 @@ Kami berkomitmen membekali setiap siswa dengan keterampilan nyata, karakter yang
                 'created_at' => now(),
                 'updated_at' => now(),
             ]));
+        }
+
+        // Slider hero — dipakai landing & halaman depan bila belum diisi admin.
+        $sliders = [
+            ['title' => 'Selamat Datang di Jurusan TKR', 'subtitle' => 'Menyiapkan teknisi kendaraan ringan yang kompeten dan siap kerja', 'button_text' => 'Pelajari Lebih Lanjut', 'button_url' => '#tentang', 'sort_order' => 1],
+            ['title' => 'SPMB [TAHUN AJARAN] Dibuka!', 'subtitle' => 'Daftar sekarang dan raih masa depan di industri otomotif', 'button_text' => 'Daftar SPMB', 'button_url' => '/spmb', 'sort_order' => 2],
+        ];
+        foreach ($sliders as $s) {
+            DB::table('sliders')->insert(array_merge($s, [
+                'image' => null,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+        }
+
+        // Guru & tenaga kependidikan — nama masih placeholder, diisi lewat Admin > Guru.
+        $teachers = [
+            ['name' => '[Nama Guru 1]', 'position' => 'Kepala Program Keahlian TKR', 'subject' => 'Manajemen Teknik Otomotif', 'education' => 'S1 Pendidikan Teknik Otomotif', 'sort_order' => 1],
+            ['name' => '[Nama Guru 2]', 'position' => 'Guru Produktif', 'subject' => 'Engine Bensin & Diesel', 'education' => 'S1 Teknik Mesin', 'sort_order' => 2],
+            ['name' => '[Nama Guru 3]', 'position' => 'Guru Produktif', 'subject' => 'Chassis & Pemindah Tenaga', 'education' => 'S1 Pendidikan Teknik Otomotif', 'sort_order' => 3],
+            ['name' => '[Nama Guru 4]', 'position' => 'Guru Produktif', 'subject' => 'Kelistrikan Bodi & AC', 'education' => 'S1 Teknik Elektro', 'sort_order' => 4],
+            ['name' => '[Nama Toolman]', 'position' => 'Toolman', 'subject' => 'Bengkel TKR', 'education' => 'D3 Teknik Mesin', 'sort_order' => 5],
+        ];
+        foreach ($teachers as $t) {
+            DB::table('teachers')->insert(array_merge($t, [
+                'photo' => null,
+                'email' => null,
+                'bio' => null,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+        }
+
+        // Prestasi — kartu contoh; judul/nama/tingkat diisi data asli lewat Admin > Prestasi.
+        $achievements = [
+            ['title' => '[Judul Prestasi 1]', 'student_name' => '[Nama Siswa]', 'level' => '[Tingkat]', 'rank' => '[Peringkat]', 'organizer' => '[Penyelenggara]', 'sort_order' => 1, 'is_featured' => true],
+            ['title' => '[Judul Prestasi 2]', 'student_name' => '[Nama Tim]', 'level' => '[Tingkat]', 'rank' => '[Peringkat]', 'organizer' => '[Penyelenggara]', 'sort_order' => 2, 'is_featured' => true],
+            ['title' => '[Judul Prestasi 3]', 'student_name' => '[Nama Siswa]', 'level' => '[Tingkat]', 'rank' => '[Peringkat]', 'organizer' => '[Penyelenggara]', 'sort_order' => 3, 'is_featured' => false],
+            ['title' => '[Judul Prestasi 4]', 'student_name' => '[Nama Tim]', 'level' => '[Tingkat]', 'rank' => '[Peringkat]', 'organizer' => '[Penyelenggara]', 'sort_order' => 4, 'is_featured' => false],
+        ];
+        foreach ($achievements as $a) {
+            DB::table('achievements')->insert(array_merge($a, [
+                'year' => null,
+                'achieved_at' => null,
+                'description' => null,
+                'image' => null,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+        }
+
+        // Testimoni alumni — contoh berstatus approved agar halaman /alumni tidak kosong.
+        $testimonials = [
+            ['name' => '[Nama Alumni 1]', 'occupation' => '[Pekerjaan]', 'workplace' => '[Tempat Kerja]', 'message' => 'Testimoni alumni dimuat di sini. Ganti dengan cerita lulusan melalui Admin > Testimoni.', 'rating' => 5, 'is_featured' => true],
+            ['name' => '[Nama Alumni 2]', 'occupation' => '[Pekerjaan]', 'workplace' => '[Tempat Kerja]', 'message' => 'Testimoni alumni dimuat di sini. Ganti dengan cerita lulusan melalui Admin > Testimoni.', 'rating' => 5, 'is_featured' => true],
+            ['name' => '[Nama Alumni 3]', 'occupation' => '[Pekerjaan]', 'workplace' => '[Tempat Kerja]', 'message' => 'Testimoni alumni dimuat di sini. Ganti dengan cerita lulusan melalui Admin > Testimoni.', 'rating' => 4, 'is_featured' => false],
+        ];
+        foreach ($testimonials as $t) {
+            DB::table('testimonials')->insert(array_merge($t, [
+                'graduation_year' => null,
+                'photo' => null,
+                'status' => 'approved',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+        }
+
+        // Tag kurikulum (dipakai filter berita).
+        $tags = ['Engine', 'EFI', 'Chassis', 'Pemindah Tenaga', 'Kelistrikan', 'AC Mobil', 'Kendaraan Listrik', 'PKL', 'UKK', 'Teaching Factory'];
+        foreach ($tags as $t) {
+            DB::table('tags')->insert([
+                'name' => $t,
+                'slug' => \Illuminate\Support\Str::slug($t),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
 
         // Placeholder logo mitra (diganti logo asli lewat Admin > Mitra).

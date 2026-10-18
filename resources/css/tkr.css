@@ -153,7 +153,6 @@ html:has(.tkr) { scroll-behavior: smooth; }
 }
 
 /* ===================== NAV ===================== */
-.tkr .site-header { position: relative; }
 .tkr .tkr-nav {
   position: sticky; top: 0; z-index: 60;
   background: rgba(242, 248, 255, .86);
@@ -312,7 +311,6 @@ html:has(.tkr) { scroll-behavior: smooth; }
   font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px;
   text-transform: uppercase; color: var(--muted);
 }
-.tkr .mitra-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 .tkr .mitra-logo {
   width: 140px; height: 44px; display: flex; align-items: center; justify-content: center;
   border: 1px dashed var(--line-strong); border-radius: 10px;
@@ -375,49 +373,15 @@ html:has(.tkr) { scroll-behavior: smooth; }
   background: rgba(255, 255, 255, .10); border: 1px solid rgba(255, 255, 255, .22);
 }
 .tkr .alur-top { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-.tkr .alur-num {
-  font-family: var(--font-display); font-weight: 700; font-size: 40px; line-height: 1;
-  color: var(--sky);
-}
 .tkr .alur-rule { flex: 1; height: 1px; background: rgba(255, 255, 255, .25); }
 .tkr .alur-card h3 { color: var(--on-blue); }
 .tkr .alur-card p { margin-top: 6px; font-size: 15px; color: var(--on-blue-soft); }
 .tkr .alur-card.is-white { background: var(--white); border-color: var(--white); }
 .tkr .alur-card.is-white h3 { color: var(--ink); }
 .tkr .alur-card.is-white p { color: var(--muted); }
-.tkr .alur-card.is-white .alur-num { color: var(--blue); }
 .tkr .alur-card.is-white .alur-rule { background: var(--line); }
 
-/* ===================== FASILITAS ===================== */
-.tkr .fas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-.tkr .fas-card {
-  position: relative; display: flex; flex-direction: column; justify-content: flex-end;
-  min-height: 300px; padding: 22px; border-radius: 22px; overflow: hidden;
-  background: var(--ice); border: 1px dashed var(--line-photo);
-}
-.tkr .fas-card .fas-caption {
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.2px;
-  text-transform: uppercase; color: var(--faint); margin-bottom: 6px;
-}
-.tkr .fas-card h3 { color: var(--ink); font-size: 20px; }
-.tkr .fas-card p { margin-top: 4px; font-size: 15px; color: var(--muted); }
-.tkr .fas-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.tkr .fas-card.has-img { border-style: solid; border-color: transparent; }
-.tkr .fas-card.has-img::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(8, 24, 67, 0) 35%, rgba(8, 24, 67, .82) 100%);
-}
-.tkr .fas-card.has-img .fas-caption { color: var(--sky); }
-.tkr .fas-card.has-img h3 { color: var(--white); }
-.tkr .fas-card.has-img p { color: var(--on-blue-soft); }
-.tkr .fas-card.has-img > *:not(img) { position: relative; z-index: 1; }
-.tkr .fas-card.is-blue { background: var(--blue); border: 1px solid var(--blue); }
-.tkr .fas-card.is-blue .fas-caption { color: var(--sky); }
-.tkr .fas-card.is-blue h3 { color: var(--white); }
-.tkr .fas-card.is-blue p { color: var(--on-blue-soft); }
-
 /* ===================== KARIER ===================== */
-.tkr .karier { padding: 104px 0; }
 .tkr .karier-layout { display: flex; flex-wrap: wrap; gap: 44px; align-items: flex-start; }
 .tkr .karier-copy { flex: 1 1 360px; min-width: 0; }
 .tkr .karier-copy h2 { margin-top: 10px; max-width: 420px; }
@@ -433,7 +397,6 @@ html:has(.tkr) { scroll-behavior: smooth; }
 .tkr .karier-card p { margin-top: 4px; font-size: 15px; color: var(--muted); }
 
 /* ===================== CTA ===================== */
-.tkr .cta-wrap { padding-bottom: 104px; }
 .tkr .cta-panel { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 32px; }
 .tkr .cta-copy { flex: 1 1 420px; min-width: 0; }
 .tkr .cta-copy h2 { color: var(--white); text-transform: uppercase; }
@@ -495,14 +458,12 @@ html:has(.tkr) { scroll-behavior: smooth; }
   .tkr .nav-burger { display: flex; }
   .tkr .nav-actions .btn-primary { display: none; }
   .tkr .hero-content { padding-top: 44px; padding-bottom: 72px; gap: 40px; }
-  .tkr .karier { padding: 72px 0; }
   .tkr .section { padding: 72px 0; }
-  .tkr .cta-wrap { padding-bottom: 72px; }
 }
 
 @media (max-width: 640px) {
   .tkr .container { padding-inline: 20px; }
-  .tkr .section, .tkr .karier { padding: 72px 0; }
+  .tkr .section { padding: 72px 0; }
   .tkr h1 { font-size: 40px; letter-spacing: -.5px; }
   .tkr h2 { font-size: 32px; }
   .tkr .hero-sub { font-size: 20px; }

@@ -32,7 +32,7 @@
         body {
             margin: 0;
             min-height: 100vh;
-            font-family: 'Plus+Jakarta+Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
             color: var(--ice);
             background:
                 radial-gradient(1000px 600px at 78% -10%, rgba(124, 200, 255, .22), transparent 60%),
@@ -188,7 +188,7 @@
             min-height: 46px;
             padding: 0 24px;
             border-radius: 999px;
-            font-family: 'Plus+Jakarta+Sans', system-ui, sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
             font-size: 14px;
             font-weight: 700;
             text-decoration: none;

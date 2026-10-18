@@ -17,11 +17,11 @@ return new class extends Migration
 
         $rows = [
             ['profile_head_name', '', 'text', 'Nama Kepala Program/Jurusan (kosong = guru urutan pertama)'],
-            ['profile_head_position', 'Kepala Program Keahlian TSM', 'text', 'Jabatan penyambut'],
+            ['profile_head_position', 'Kepala Program Keahlian TKR', 'text', 'Jabatan penyambut'],
             ['profile_head_photo', '', 'image', 'Foto penyambut'],
             ['profile_speech', "Assalamu'alaikum warahmatullahi wabarakatuh.\n\nKami berkomitmen membekali setiap siswa dengan keterampilan nyata, karakter Islami, dan kesiapan kerja agar mampu bersaing di dunia industri otomotif.", 'textarea', 'Sambutan'],
             ['profile_history', '', 'textarea', 'Sejarah jurusan'],
-            ['profile_vision', 'Menjadi program keahlian Teknik Sepeda Motor yang unggul, berkarakter Islami, dan menghasilkan lulusan siap kerja serta berwirausaha.', 'textarea', 'Visi'],
+            ['profile_vision', 'Menjadi program keahlian Teknik Kendaraan Ringan yang unggul, berkarakter Islami, dan menghasilkan lulusan siap kerja serta berwirausaha.', 'textarea', 'Visi'],
             ['profile_mission', "Menyelenggarakan pembelajaran berbasis praktik sesuai standar industri.\nMenanamkan akhlak Islami dan budaya kerja disiplin.\nMenjalin kemitraan dengan dunia usaha dan dunia industri.\nMengembangkan jiwa kewirausahaan siswa di bidang otomotif.", 'textarea', 'Misi (satu poin per baris)'],
             ['profile_structure_image', '', 'image', 'Bagan struktur organisasi'],
         ];
