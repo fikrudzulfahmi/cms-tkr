@@ -22,6 +22,7 @@ const links = [
   { label: 'Sarana', href: '/sarana' },
   { label: 'Prestasi', href: '/prestasi' },
   { label: 'Berita', href: '/berita' },
+  { label: 'Galeri', href: '/#galeri' },
   { label: 'Alumni', href: '/alumni' },
   { label: 'Kontak', href: '/#kontak' },
 ]

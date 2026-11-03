@@ -56,13 +56,13 @@ class DatabaseSeeder extends Seeder
 
         // 3. Pengaturan Situs & Profil Resmi
         $settings = [
-            ['key' => 'site_name', 'value' => 'TKR SMK Islam 1 Blitar', 'group' => 'umum', 'type' => 'text', 'label' => 'Nama Situs'],
+            ['key' => 'site_name', 'value' => 'TKR SMKS Islam 1 Kota Blitar', 'group' => 'umum', 'type' => 'text', 'label' => 'Nama Situs'],
             ['key' => 'site_tagline', 'value' => 'Success by Religious and Discipline', 'group' => 'umum', 'type' => 'text', 'label' => 'Tagline'],
             ['key' => 'site_logo', 'value' => '', 'group' => 'umum', 'type' => 'image', 'label' => 'Logo Situs'],
             ['key' => 'site_favicon', 'value' => '', 'group' => 'umum', 'type' => 'image', 'label' => 'Favicon'],
-            ['key' => 'footer_text', 'value' => '© 2026 Jurusan Teknik Kendaraan Ringan — SMK Islam 1 Blitar', 'group' => 'umum', 'type' => 'textarea', 'label' => 'Teks Footer'],
+            ['key' => 'footer_text', 'value' => '© 2026 Jurusan Teknik Kendaraan Ringan — SMKS Islam 1 Kota Blitar', 'group' => 'umum', 'type' => 'textarea', 'label' => 'Teks Footer'],
 
-            ['key' => 'school_name', 'value' => 'SMK Islam 1 Blitar', 'group' => 'profil', 'type' => 'text', 'label' => 'Nama Sekolah'],
+            ['key' => 'school_name', 'value' => 'SMKS Islam 1 Kota Blitar', 'group' => 'profil', 'type' => 'text', 'label' => 'Nama Sekolah'],
             ['key' => 'department_name', 'value' => 'Teknik Kendaraan Ringan', 'group' => 'profil', 'type' => 'text', 'label' => 'Nama Jurusan'],
             ['key' => 'address', 'value' => 'Jl. Musi No. 6 Kauman, Kec. Kepanjenkidul, Kota Blitar, Jawa Timur 66117', 'group' => 'profil', 'type' => 'textarea', 'label' => 'Alamat'],
             ['key' => 'phone', 'value' => '0342-801450', 'group' => 'profil', 'type' => 'text', 'label' => 'Telepon'],
@@ -75,9 +75,9 @@ class DatabaseSeeder extends Seeder
             ['key' => 'tiktok_url', 'value' => '', 'group' => 'sosmed', 'type' => 'text', 'label' => 'TikTok URL'],
 
             ['key' => 'hero_title', 'value' => 'Teknik Kendaraan Ringan', 'group' => 'beranda', 'type' => 'text', 'label' => 'Hero Judul'],
-            ['key' => 'hero_subtitle', 'value' => 'Kuasai teknologi mobil masa kini bersama SMK Islam 1 Blitar. Success by Religious and Discipline.', 'group' => 'beranda', 'type' => 'textarea', 'label' => 'Hero Subjudul'],
+            ['key' => 'hero_subtitle', 'value' => 'Kuasai teknologi mobil masa kini bersama SMKS Islam 1 Kota Blitar. Success by Religious and Discipline.', 'group' => 'beranda', 'type' => 'textarea', 'label' => 'Hero Subjudul'],
             ['key' => 'hero_bg', 'value' => '', 'group' => 'beranda', 'type' => 'image', 'label' => 'Hero Background'],
-            ['key' => 'about_text', 'value' => '<p>Kompetensi Keahlian Teknik Kendaraan Ringan (TKR) SMK Islam 1 Blitar menyiapkan tenaga teknisi otomotif profesional yang menguasai perawatan dan perbaikan kendaraan roda empat, kelistrikan bodi, sistem EFI, hingga chasis. Kurikulum diselaraskan langsung dengan standar PT Astra Daihatsu Motor melalui program Pintar Bersama Daihatsu.</p>', 'group' => 'beranda', 'type' => 'html', 'label' => 'Teks Tentang Kami'],
+            ['key' => 'about_text', 'value' => '<p>Kompetensi Keahlian Teknik Kendaraan Ringan (TKR) SMKS Islam 1 Kota Blitar menyiapkan tenaga teknisi otomotif profesional yang menguasai perawatan dan perbaikan kendaraan roda empat, kelistrikan bodi, sistem EFI, hingga chasis. Kurikulum diselaraskan langsung dengan standar PT Astra Daihatsu Motor melalui program Pintar Bersama Daihatsu.</p>', 'group' => 'beranda', 'type' => 'html', 'label' => 'Teks Tentang Kami'],
             ['key' => 'about_image', 'value' => '', 'group' => 'beranda', 'type' => 'image', 'label' => 'Foto Tentang Kami'],
             ['key' => 'stat_students', 'value' => '741', 'group' => 'beranda', 'type' => 'text', 'label' => 'Statistik: siswa aktif'],
             ['key' => 'stat_graduates', 'value' => '1500+', 'group' => 'beranda', 'type' => 'text', 'label' => 'Statistik: alumni'],
@@ -919,6 +919,27 @@ Yosh…!! Yosh…!! Yosh…!!</p>
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+        }
+
+        // 14. Galeri Foto Kegiatan & Fasilitas Bengkel TKR
+        DB::table('galleries')->delete();
+        $galleries = [
+            ['title' => 'Bengkel Chassis & Sistem Kemudi', 'type' => 'image', 'file' => 'galleries/galeri_1_bengkel_chassis.jpeg', 'album' => 'Bengkel TKR', 'caption' => 'Suasana area praktik sistem kemudi dan suspensi otomotif.', 'sort_order' => 1],
+            ['title' => 'Peralatan Praktik Standar Industri', 'type' => 'image', 'file' => 'galleries/galeri_2_alat_praktik.jpeg', 'album' => 'Fasilitas', 'caption' => 'Alat ukur presisi dan instrumen kelistrikan otomotif modern.', 'sort_order' => 2],
+            ['title' => 'Unit Kendaraan Praktik Siswa', 'type' => 'image', 'file' => 'galleries/galeri_3_mobil_praktik.jpeg', 'album' => 'Praktik Mobil', 'caption' => 'Unit mobil operasional untuk praktik troubleshooting mesin dan servis berkala.', 'sort_order' => 3],
+            ['title' => 'Praktik Kelistrikan Bodi & AC Mobil', 'type' => 'image', 'file' => 'galleries/galeri_4_kelistrikan.jpeg', 'album' => 'Kelistrikan', 'caption' => 'Instalasi simulator wiring diagram kelistrikan kendaraan roda empat.', 'sort_order' => 4],
+            ['title' => 'Overhaul Mesin Bensin & Diesel', 'type' => 'image', 'file' => 'galleries/galeri_5_overhaul_engine.jpeg', 'album' => 'Engine', 'caption' => 'Praktik bongkar pasang silinder head, katup, dan blok mesin.', 'sort_order' => 5],
+            ['title' => 'Area Car Lift & 3D Wheel Alignment', 'type' => 'image', 'file' => 'galleries/galeri_6_carlift_spooring.jpeg', 'album' => 'Bengkel TKR', 'caption' => 'Fasilitas spooring 3D dan balancing roda standar bengkel resmi.', 'sort_order' => 6],
+            ['title' => 'Ruang Teori & Diskusi Otomotif', 'type' => 'image', 'file' => 'galleries/galeri_7_ruang_teori.jpeg', 'album' => 'Akademik', 'caption' => 'Pembelajaran teori kejuruan dan pemahaman SOP keselamatan kerja (K3).', 'sort_order' => 7],
+            ['title' => 'Perkakas Hand Tools & Special Service Tools', 'type' => 'image', 'file' => 'galleries/galeri_8_hand_tools.jpeg', 'album' => 'Fasilitas', 'caption' => 'Tool set lengkap tertata rapi sesuai standar budaya industri 5S.', 'sort_order' => 8],
+        ];
+        foreach ($galleries as $g) {
+            DB::table('galleries')->insert(array_merge($g, [
+                'video_url' => null,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
         }
     }
 }
