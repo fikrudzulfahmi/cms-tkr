@@ -7,27 +7,59 @@ const page = usePage()
 const s = computed(() => page.props.settings || {})
 const open = ref(false)
 const scrolled = ref(false)
-// Tombol masuk admin sengaja tidak ditampilkan; admin akses manual lewat /admin.
+const activeDropdown = ref(null)
+const mobileOpenMenus = ref({
+  Profil: false,
+  Akademik: false,
+  Fasilitas: false,
+})
+
 const path = computed(() => (page.url || '/').split('#')[0].split('?')[0])
 const logo = computed(() => {
   const p = s.value.site_logo
   return p ? (/^https?:\/\//.test(p) ? p : `/storage/${p}`) : null
 })
 
-const links = [
+const navItems = [
   { label: 'Beranda', href: '/' },
-  { label: 'Profil', href: '/profil', also: ['/guru'] },
-  { label: 'Kompetensi', href: '/kompetensi' },
-  { label: 'Program', href: '/program' },
-  { label: 'Sarana', href: '/sarana' },
+  {
+    label: 'Profil',
+    children: [
+      { label: 'Profil Jurusan', href: '/profil' },
+      { label: 'Guru & Instruktur', href: '/guru' },
+      { label: 'Alumni', href: '/alumni' },
+    ],
+  },
+  {
+    label: 'Akademik',
+    children: [
+      { label: 'Kompetensi Keahlian', href: '/kompetensi' },
+      { label: 'Program Unggulan', href: '/program' },
+    ],
+  },
+  {
+    label: 'Fasilitas',
+    children: [
+      { label: 'Sarana & Bengkel', href: '/sarana' },
+      { label: 'Galeri Foto', href: '/#galeri' },
+    ],
+  },
   { label: 'Prestasi', href: '/prestasi' },
   { label: 'Berita', href: '/berita' },
-  { label: 'Galeri', href: '/#galeri' },
-  { label: 'Alumni', href: '/alumni' },
   { label: 'Kontak', href: '/#kontak' },
 ]
-// Anchor yang punya section di landing (untuk penanda menu aktif saat menggulir).
-const sectionIds = links.filter((l) => l.href.startsWith('/#')).map((l) => l.href.slice(2))
+
+// Kumpulkan semua link anak maupun root untuk deteksi anchor scrolling
+const allLinks = []
+navItems.forEach((item) => {
+  if (item.children) {
+    item.children.forEach((c) => allLinks.push(c))
+  } else {
+    allLinks.push(item)
+  }
+})
+
+const sectionIds = allLinks.filter((l) => l.href.startsWith('/#')).map((l) => l.href.slice(2))
 const activeHash = ref('')
 
 function updateActiveHash() {
@@ -38,7 +70,6 @@ function updateActiveHash() {
     const el = document.getElementById(id)
     if (el && el.getBoundingClientRect().top - offset <= 0) current = '#' + id
   }
-  // Di dasar halaman, section terakhir yang ada selalu dianggap aktif.
   if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
     for (let i = sectionIds.length - 1; i >= 0; i--) {
       if (document.getElementById(sectionIds[i])) { current = '#' + sectionIds[i]; break }
@@ -48,18 +79,41 @@ function updateActiveHash() {
 }
 
 const isActive = (href) => {
+  if (!href) return false
   if (href.startsWith('/#')) return path.value === '/' && activeHash.value === href.slice(1)
   if (href === '/') return path.value === '/' && !activeHash.value
-  const l = links.find((x) => x.href === href)
-  return [href, ...(l?.also || [])].some((h) => path.value === h || path.value.startsWith(h + '/'))
+  return path.value === href || path.value.startsWith(href + '/')
 }
 
-// Di landing, anchor /#x cukup scroll native; dari halaman lain pakai Link (tanpa reload).
-const navTag = (href) => (href.startsWith('/#') && path.value === '/' ? 'a' : Link)
+const isParentActive = (item) => {
+  if (item.children) {
+    return item.children.some((c) => isActive(c.href))
+  }
+  return isActive(item.href)
+}
+
+const navTag = (href) => (href && href.startsWith('/#') && path.value === '/' ? 'a' : Link)
 
 function onNavClick(href) {
   open.value = false
-  if (href.startsWith('/#')) activeHash.value = href.slice(1)
+  activeDropdown.value = null
+  if (href && href.startsWith('/#')) activeHash.value = href.slice(1)
+}
+
+function toggleMobileSubmenu(label) {
+  mobileOpenMenus.value[label] = !mobileOpenMenus.value[label]
+}
+
+let timeoutId = null
+function onDropdownEnter(label) {
+  clearTimeout(timeoutId)
+  activeDropdown.value = label
+}
+
+function onDropdownLeave() {
+  timeoutId = setTimeout(() => {
+    activeDropdown.value = null
+  }, 150)
 }
 
 let ticking = false
@@ -70,23 +124,36 @@ function onScroll() {
   requestAnimationFrame(() => { updateActiveHash(); ticking = false })
 }
 
+function onClickOutside(e) {
+  if (!e.target.closest('.nav-dropdown-container')) {
+    activeDropdown.value = null
+  }
+}
+
 onMounted(() => {
   updateActiveHash()
   scrolled.value = window.scrollY > 16
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('resize', onScroll, { passive: true })
+  document.addEventListener('click', onClickOutside)
 })
+
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('resize', onScroll)
+  document.removeEventListener('click', onClickOutside)
 })
-// Pindah halaman lewat Inertia (/ -> /berita) harus memindahkan penanda aktif.
-watch(path, () => { open.value = false; updateActiveHash() })
+
+watch(path, () => {
+  open.value = false
+  activeDropdown.value = null
+  updateActiveHash()
+})
 </script>
 
 <template>
   <nav aria-label="Navigasi utama" class="site-nav fixed inset-x-0 top-0 z-50 backdrop-blur-md border-b transition-colors duration-150"
-    :class="scrolled || open ? 'bg-ice/95 border-line' : 'bg-ice/85 border-transparent'">
+    :class="scrolled || open ? 'bg-ice/95 border-line shadow-sm' : 'bg-ice/85 border-transparent'">
     <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 min-h-[76px]">
       <Link href="/" class="flex items-center gap-3 min-w-0" aria-label="Beranda TKR">
         <img v-if="logo" :src="logo" alt="" class="w-11 h-11 object-contain flex-shrink-0" />
@@ -104,17 +171,80 @@ watch(path, () => { open.value = false; updateActiveHash() })
         </span>
       </Link>
 
-      <div class="hidden xl:flex items-center gap-6">
-        <component :is="navTag(l.href)" v-for="l in links" :key="l.href" :href="l.href" @click="onNavClick(l.href)"
-          class="py-1.5 text-[15px] font-medium border-b-2 transition-colors"
-          :class="isActive(l.href) ? 'text-blue-500 border-accent' : 'text-navy border-transparent hover:text-blue-500 hover:border-accent'"
-          :aria-current="isActive(l.href) ? 'page' : undefined">{{ l.label }}</component>
+      <div class="hidden lg:flex items-center gap-1 xl:gap-3">
+        <template v-for="item in navItems" :key="item.label">
+          <!-- Item flat -->
+          <component
+            v-if="!item.children"
+            :is="navTag(item.href)"
+            :href="item.href"
+            @click="onNavClick(item.href)"
+            class="px-2.5 py-1.5 text-[15px] font-medium border-b-2 transition-colors rounded-t"
+            :class="isActive(item.href) ? 'text-blue-500 border-accent font-semibold' : 'text-navy border-transparent hover:text-blue-500 hover:border-accent'"
+            :aria-current="isActive(item.href) ? 'page' : undefined"
+          >
+            {{ item.label }}
+          </component>
+
+          <!-- Item dropdown -->
+          <div
+            v-else
+            class="nav-dropdown-container relative"
+            @mouseenter="onDropdownEnter(item.label)"
+            @mouseleave="onDropdownLeave"
+          >
+            <button
+              type="button"
+              @click="activeDropdown = activeDropdown === item.label ? null : item.label"
+              class="flex items-center gap-1 px-2.5 py-1.5 text-[15px] font-medium border-b-2 transition-colors rounded-t cursor-pointer"
+              :class="isParentActive(item) ? 'text-blue-500 border-accent font-semibold' : 'text-navy border-transparent hover:text-blue-500 hover:border-accent'"
+              :aria-expanded="activeDropdown === item.label"
+            >
+              <span>{{ item.label }}</span>
+              <svg
+                class="w-3.5 h-3.5 transition-transform duration-200"
+                :class="activeDropdown === item.label ? 'rotate-180 text-blue-500' : 'text-muted'"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <!-- Dropdown popup -->
+            <Transition
+              enter-active-class="transition ease-out duration-150"
+              enter-from-class="opacity-0 translate-y-2 scale-95"
+              enter-to-class="opacity-100 translate-y-0 scale-100"
+              leave-active-class="transition ease-in duration-100"
+              leave-from-class="opacity-100 translate-y-0 scale-100"
+              leave-to-class="opacity-0 translate-y-2 scale-95"
+            >
+              <div
+                v-if="activeDropdown === item.label"
+                class="absolute left-0 mt-1 w-52 bg-white rounded-xl shadow-xl border border-line py-1.5 z-50 overflow-hidden"
+              >
+                <component
+                  :is="navTag(child.href)"
+                  v-for="child in item.children"
+                  :key="child.href"
+                  :href="child.href"
+                  @click="onNavClick(child.href)"
+                  class="block px-4 py-2 text-sm transition-colors"
+                  :class="isActive(child.href) ? 'bg-blue-50 text-blue-500 font-semibold border-l-4 border-blue-500' : 'text-navy hover:bg-ice hover:text-blue-500'"
+                  :aria-current="isActive(child.href) ? 'page' : undefined"
+                >
+                  {{ child.label }}
+                </component>
+              </div>
+            </Transition>
+          </div>
+        </template>
       </div>
 
       <div class="flex items-center gap-2.5 flex-shrink-0">
         <component :is="navTag('/#spmb')" href="/#spmb" class="btn-primary hidden md:inline-flex">Daftar Sekarang</component>
         <button type="button" @click="open = !open" :aria-expanded="open" :aria-label="open ? 'Tutup menu' : 'Buka menu'"
-          class="xl:hidden w-11 h-11 rounded-xl bg-white border border-blue-200 text-navy flex items-center justify-center">
+          class="lg:hidden w-11 h-11 rounded-xl bg-white border border-blue-200 text-navy flex items-center justify-center cursor-pointer">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <path v-if="!open" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/>
             <path v-else stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -123,14 +253,59 @@ watch(path, () => { open.value = false; updateActiveHash() })
       </div>
     </div>
 
+    <!-- Mobile Drawer -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0 -translate-y-1" leave-active-class="transition duration-150" leave-to-class="opacity-0 -translate-y-1">
-      <div v-if="open" class="xl:hidden bg-white border-t border-line">
-        <div class="max-w-[1200px] mx-auto px-4 sm:px-6 pt-2 pb-4">
-          <component :is="navTag(l.href)" v-for="l in links" :key="l.href" :href="l.href" @click="onNavClick(l.href)"
-            class="block px-1 py-3 text-base font-medium border-b border-line-soft"
-            :class="isActive(l.href) ? 'text-blue-500' : 'text-navy'"
-            :aria-current="isActive(l.href) ? 'page' : undefined">{{ l.label }}</component>
-          <component :is="navTag('/#spmb')" href="/#spmb" @click="open = false" class="btn-primary w-full mt-4">Daftar Sekarang</component>
+      <div v-if="open" class="lg:hidden bg-white border-t border-line shadow-lg max-h-[calc(100vh-80px)] overflow-y-auto">
+        <div class="max-w-[1200px] mx-auto px-4 sm:px-6 pt-2 pb-6">
+          <template v-for="item in navItems" :key="item.label">
+            <!-- Non-dropdown mobile -->
+            <component
+              v-if="!item.children"
+              :is="navTag(item.href)"
+              :href="item.href"
+              @click="onNavClick(item.href)"
+              class="block px-1 py-3 text-base font-medium border-b border-line-soft transition-colors"
+              :class="isActive(item.href) ? 'text-blue-500 font-semibold' : 'text-navy'"
+              :aria-current="isActive(item.href) ? 'page' : undefined"
+            >
+              {{ item.label }}
+            </component>
+
+            <!-- Dropdown mobile accordion -->
+            <div v-else class="border-b border-line-soft py-1">
+              <button
+                type="button"
+                @click="toggleMobileSubmenu(item.label)"
+                class="flex items-center justify-between w-full px-1 py-2.5 text-base font-medium transition-colors cursor-pointer"
+                :class="isParentActive(item) ? 'text-blue-500 font-semibold' : 'text-navy'"
+              >
+                <span>{{ item.label }}</span>
+                <svg
+                  class="w-4 h-4 transition-transform duration-200"
+                  :class="mobileOpenMenus[item.label] ? 'rotate-180 text-blue-500' : 'text-muted'"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div v-show="mobileOpenMenus[item.label]" class="pl-4 pr-1 pb-2 pt-0.5 space-y-1 bg-ice/50 rounded-lg mb-1">
+                <component
+                  :is="navTag(child.href)"
+                  v-for="child in item.children"
+                  :key="child.href"
+                  :href="child.href"
+                  @click="onNavClick(child.href)"
+                  class="block py-2 text-sm transition-colors"
+                  :class="isActive(child.href) ? 'text-blue-500 font-semibold' : 'text-navy/80 hover:text-blue-500'"
+                  :aria-current="isActive(child.href) ? 'page' : undefined"
+                >
+                  {{ child.label }}
+                </component>
+              </div>
+            </div>
+          </template>
+
+          <component :is="navTag('/#spmb')" href="/#spmb" @click="open = false" class="btn-primary w-full mt-4 justify-center">Daftar Sekarang</component>
         </div>
       </div>
     </Transition>
