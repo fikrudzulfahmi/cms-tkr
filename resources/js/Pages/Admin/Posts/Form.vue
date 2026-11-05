@@ -2,10 +2,11 @@
 import { computed, ref } from 'vue'
 import RichEditor from '@/Components/RichEditor.vue'
 import { analyzeSeo, slugify } from '@/seo-analyzer.js'
-import { useForm, Link } from '@inertiajs/vue3'
+import { useForm, usePage, Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 
-const props = defineProps(['post', 'categories', 'tags', 'postTags', 'visitStats'])
+const props = defineProps(['post', 'categories', 'tags', 'postTags', 'visitStats', 'isAuthor', 'authors'])
+const isAdminUser = computed(() => (usePage().props.auth?.user?.role || '') === 'admin')
 const isEdit = !!props.post
 
 const formatDatetimeForInput = (val) => {
@@ -30,13 +31,14 @@ const form = useForm({
   title: props.post?.title || '',
   slug: props.post?.slug || '',
   category_id: props.post?.category_id || props.categories?.[0]?.id || '',
+  user_id: props.post?.user_id || null,
   body: props.post?.body || '',
   excerpt: props.post?.excerpt || '',
   meta_title: props.post?.meta_title || '',
   meta_description: props.post?.meta_description || '',
   focus_keyword: props.post?.focus_keyword || '',
   canonical_url: props.post?.canonical_url || '',
-  status: props.post?.status || 'published',
+  status: props.post?.status || (props.isAuthor ? 'draft' : 'published'),
   published_at: formatDatetimeForInput(props.post?.published_at),
   is_featured: props.post ? Boolean(props.post.is_featured) : false,
   allow_comments: props.post ? Boolean(props.post.allow_comments) : true,
@@ -147,6 +149,15 @@ const submit = () => {
             </div>
 
             <div class="grid sm:grid-cols-2 gap-4">
+              <div v-if="isAdminUser && authors?.length">
+                <label class="form-label">Penulis</label>
+                <select v-model="form.user_id" class="form-input">
+                  <option :value="null">— Saya sendiri —</option>
+                  <option v-for="a in authors" :key="a.id" :value="a.id">{{ a.name }} ({{ a.role }})</option>
+                </select>
+                <p class="text-xs text-slate-500 mt-1">Nama ini tampil di halaman berita.</p>
+                <p v-if="form.errors.user_id" class="text-red-500 text-xs mt-1">{{ form.errors.user_id }}</p>
+              </div>
               <div>
                 <label class="form-label">Kategori *</label>
                 <select v-model="form.category_id" class="form-input">
@@ -156,20 +167,30 @@ const submit = () => {
               </div>
               <div>
                 <label class="form-label">Status Publikasi *</label>
-                <select v-model="form.status" class="form-input">
+                <select v-if="!isAuthor" v-model="form.status" class="form-input">
                   <option value="published">Tayang (Published)</option>
                   <option value="draft">Draft</option>
+                  <option value="review">Menunggu Review</option>
                   <option value="scheduled">Terjadwal (Scheduled)</option>
                   <option value="archived">Arsip (Archived)</option>
                 </select>
+                <select v-else v-model="form.status" class="form-input">
+                  <option value="draft">Draft (simpan dulu)</option>
+                  <option value="review">Kirim untuk Review</option>
+                </select>
+                <p v-if="isAuthor" class="text-xs text-slate-500 mt-1">
+                  Berita Anda akan diperiksa admin/editor sebelum tayang.
+                </p>
                 <p v-if="form.errors.status" class="text-red-500 text-xs mt-1">{{ form.errors.status }}</p>
               </div>
             </div>
 
             <div>
               <label class="form-label">Waktu Publikasi (Published At)</label>
-              <input v-model="form.published_at" type="datetime-local" class="form-input text-sm" />
-              <p class="text-xs text-slate-500 mt-1">Kosongkan untuk otomatis sekarang saat status Published</p>
+              <input v-model="form.published_at" type="datetime-local" class="form-input text-sm" :disabled="isAuthor" />
+              <p class="text-xs text-slate-500 mt-1">
+                {{ isAuthor ? 'Diisi otomatis oleh admin saat berita disetujui.' : 'Kosongkan untuk otomatis sekarang saat status Published' }}
+              </p>
               <p v-if="form.errors.published_at" class="text-red-500 text-xs mt-1">{{ form.errors.published_at }}</p>
             </div>
 

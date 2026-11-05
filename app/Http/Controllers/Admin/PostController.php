@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
+use App\Models\User;
 use App\Models\Visit;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -19,7 +20,13 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
         $query = Post::with(['category', 'user:id,name'])->orderByDesc('created_at');
+
+        // Penulis hanya melihat berita miliknya sendiri.
+        if ($user && $user->isAuthor()) {
+            $query->where('user_id', $user->id);
+        }
         if ($request->status) $query->where('status', $request->status);
         if ($request->category) $query->where('category_id', $request->category);
         if ($request->q) {
@@ -31,6 +38,10 @@ class PostController extends Controller
             'posts' => $query->paginate(15)->withQueryString(),
             'categories' => Category::active()->get(['id', 'name', 'slug']),
             'filters' => $request->only(['status', 'category', 'q']),
+            'canReview' => (bool) ($user && $user->canReview()),
+            'pendingReview' => $user && $user->canReview()
+                ? Post::where('status', 'review')->count()
+                : 0,
         ]);
     }
 
@@ -39,14 +50,17 @@ class PostController extends Controller
         return Inertia::render('Admin/Posts/Form', [
             'categories' => Category::active()->get(['id', 'name', 'slug']),
             'tags' => Tag::all(['id', 'name', 'slug']),
+            'isAuthor' => (bool) auth()->user()?->isAuthor(),
+            'authors' => $this->authorOptions(),
         ]);
     }
 
     public function store(Request $request)
     {
         $data = $request->validate($this->rules());
+        $data = $this->enforceAuthorStatus($data);
         $data['slug'] = Slug::unique('posts', ($data['slug'] ?? null) ?: $data['title']);
-        $data['user_id'] = auth()->id();
+        $data['user_id'] = $this->resolveUserId($data, null);
         $data['body'] = $this->cleanBody($data['body'] ?? null);
         $data['reading_time'] = max(1, (int) round(str_word_count(strip_tags($data['body'] ?? '')) / 200));
         $data['published_at'] = $this->resolvePublishedAt($data, null);
@@ -80,6 +94,8 @@ class PostController extends Controller
             'categories' => Category::active()->get(['id', 'name', 'slug']),
             'tags' => Tag::all(['id', 'name', 'slug']),
             'postTags' => $post->tags->pluck('id'),
+            'isAuthor' => (bool) auth()->user()?->isAuthor(),
+            'authors' => $this->authorOptions(),
             'visitStats' => [
                 'total' => $post->visits()->count(),
                 'last7' => $post->visits()->where('visited_on', '>=', now()->subDays(7))->count(),
@@ -92,6 +108,8 @@ class PostController extends Controller
         $this->authorizePost($post);
 
         $data = $request->validate($this->rules($post->id));
+        $data = $this->enforceAuthorStatus($data);
+        $data['user_id'] = $this->resolveUserId($data, $post);
         if (empty($data['slug'])) $data['slug'] = Slug::unique('posts', $data['title'], $post->id);
         $data['body'] = $this->cleanBody($data['body'] ?? null);
         $data['reading_time'] = max(1, (int) round(str_word_count(strip_tags($data['body'] ?? '')) / 200));
@@ -118,6 +136,26 @@ class PostController extends Controller
         return redirect()->route('admin.posts.index')->with('success', 'Berita berhasil diperbarui!');
     }
 
+    /** Admin/editor menyetujui berita kiriman penulis → tayang. */
+    public function approve(Post $post)
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->canReview(), 403, 'Hanya admin atau editor yang bisa menyetujui berita.');
+
+        if ($post->status !== 'review') {
+            return back()->with('error', 'Berita ini tidak sedang menunggu review.');
+        }
+
+        $post->update([
+            'status' => 'published',
+            'published_at' => $post->published_at ?? now(),
+        ]);
+
+        \App\Models\ActivityLog::record('post_approved', 'berita', 'Menyetujui berita: ' . $post->title, $post);
+
+        return back()->with('success', 'Berita "' . $post->title . '" disetujui dan tayang.');
+    }
+
     public function destroy(Post $post)
     {
         $this->authorizePost($post);
@@ -133,6 +171,38 @@ class PostController extends Controller
         $user = auth()->user();
         if ($user && $user->isAdmin()) return;
         abort_if((int) $post->user_id !== (int) optional($user)->id, 403, 'Anda hanya bisa mengubah berita milik Anda sendiri.');
+    }
+
+    /** Admin boleh mengalihkan penulis berita; selain admin tetap pemiliknya. */
+    private function resolveUserId(array $data, ?Post $post): int
+    {
+        $user = auth()->user();
+        if ($user?->isAdmin() && ! empty($data['user_id'])) {
+            return (int) $data['user_id'];
+        }
+        return (int) ($post?->user_id ?: $user->id);
+    }
+
+    /** Pilihan penulis untuk dropdown admin. */
+    private function authorOptions()
+    {
+        return auth()->user()?->isAdmin()
+            ? User::whereIn('role', User::CMS_ROLES)->orderBy('name')->get(['id', 'name', 'role'])
+            : [];
+    }
+
+    /**
+     * Penulis (role author) tidak boleh menerbitkan sendiri: status dikunci
+     * ke draft/review dan tanggal tayang dikosongkan.
+     */
+    private function enforceAuthorStatus(array $data): array
+    {
+        $user = auth()->user();
+        if ($user && $user->isAuthor()) {
+            $data['status'] = ($data['status'] ?? null) === 'draft' ? 'draft' : 'review';
+            $data['published_at'] = null;
+        }
+        return $data;
     }
 
     /** Status published tanpa tanggal → pakai tanggal lama atau waktu sekarang. */
@@ -203,8 +273,9 @@ class PostController extends Controller
             'category_id' => 'required|exists:categories,id',
             'excerpt' => 'nullable|string|max:500',
             'body' => 'nullable|string',
-            'status' => 'required|in:draft,published,scheduled,archived',
+            'status' => 'required|in:draft,published,scheduled,archived,review',
             'published_at' => 'nullable|date|required_if:status,scheduled',
+            'user_id' => 'nullable|exists:users,id',
             'is_featured' => 'boolean',
             'allow_comments' => 'boolean',
             'meta_title' => 'nullable|string|max:255',

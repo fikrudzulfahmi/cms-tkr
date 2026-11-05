@@ -63,7 +63,12 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'num
       <div v-if="post.category" class="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-3" :style="`background:${post.category.color}20;color:${post.category.color}`">{{ post.category.name }}</div>
       <h1 class="font-display text-3xl sm:text-[44px] font-extrabold text-navy mb-5 leading-[1.1] tracking-[-1px]">{{ post.title }}</h1>
       <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 pb-6 border-b border-slate-200 mb-8">
-        <span>Oleh <strong>{{ post.user?.name || 'Admin' }}</strong></span>
+        <span class="flex items-center gap-2">
+          <img v-if="post.user?.avatar" :src="`/storage/${post.user.avatar}`" :alt="post.user.name"
+            class="w-7 h-7 rounded-full object-cover border border-line" />
+          <span v-else class="w-7 h-7 rounded-full bg-ice text-navy flex items-center justify-center text-[11px] font-bold">{{ (post.user?.name || 'A')[0] }}</span>
+          Oleh <strong>{{ post.user?.name || 'Administrator' }}</strong>
+        </span>
         <span>·</span>
         <span>{{ formatDate(post.published_at) }}</span>
         <span>·</span>
@@ -79,6 +84,21 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'num
 
       <!-- Content -->
       <div class="prose prose-blue max-w-none text-slate-700 leading-relaxed mb-10" v-html="post.body"></div>
+
+      <!-- Penulis -->
+      <div v-if="post.user" class="flex items-start gap-4 p-5 rounded-2xl bg-ice border border-line mb-10">
+        <img v-if="post.user.avatar" :src="`/storage/${post.user.avatar}`" :alt="post.user.name"
+          class="w-14 h-14 rounded-full object-cover border border-line flex-shrink-0" />
+        <div v-else class="w-14 h-14 rounded-full bg-navy text-accent flex items-center justify-center text-lg font-bold flex-shrink-0">
+          {{ post.user.name?.[0] || 'A' }}
+        </div>
+        <div class="min-w-0">
+          <p class="font-mono text-[10px] uppercase tracking-[2px] text-label mb-1">Penulis</p>
+          <p class="font-display font-bold text-navy leading-tight">{{ post.user.name }}</p>
+          <p v-if="post.user.position" class="text-xs text-amber-700 font-semibold">{{ post.user.position }}</p>
+          <p v-if="post.user.bio" class="text-sm text-slate-600 mt-2 leading-relaxed">{{ post.user.bio }}</p>
+        </div>
+      </div>
 
       <!-- Reactions & Share -->
       <div class="flex flex-wrap items-center justify-between gap-4 py-6 border-y border-slate-200 mb-12">

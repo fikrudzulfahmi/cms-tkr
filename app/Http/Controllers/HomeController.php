@@ -179,7 +179,7 @@ class HomeController extends Controller
 
     public function post(Request $request, $slug)
     {
-        $post = Post::published()->where('slug', $slug)->with(['category', 'user:id,name,avatar', 'tags'])->firstOrFail();
+        $post = Post::published()->where('slug', $slug)->with(['category', 'user:id,name,avatar,position,bio', 'tags'])->firstOrFail();
         $this->trackVisit($request, $post->id);
         if (! $this->isBot($request)) {
             $post->increment('views_count');

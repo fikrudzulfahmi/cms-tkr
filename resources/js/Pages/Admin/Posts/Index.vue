@@ -3,10 +3,11 @@ import { ref, watch, computed } from 'vue'
 import { router, Link, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 
-const props = defineProps(['posts', 'categories', 'filters'])
+const props = defineProps(['posts', 'categories', 'filters', 'canReview', 'pendingReview'])
 
 const page = usePage()
 const isAdmin = computed(() => (page.props.auth?.user?.role || 'editor') === 'admin')
+const canReview = computed(() => props.canReview ?? page.props.auth?.user?.canReview ?? false)
 
 const q = ref(props.filters?.q || '')
 const status = ref(props.filters?.status || '')
@@ -50,6 +51,13 @@ const statusLabels = {
   draft: 'Draft',
   scheduled: 'Terjadwal',
   archived: 'Arsip',
+  review: 'Menunggu Review',
+}
+
+const approvePost = (p) => {
+  if (confirm(`Setujui dan terbitkan berita "${p.title}"?`)) {
+    router.patch(`/admin/berita/${p.id}/setujui`, {}, { preserveScroll: true })
+  }
 }
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }) : ''
@@ -79,6 +87,18 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'num
         </div>
       </div>
 
+      <!-- Antrean review -->
+      <div v-if="canReview && pendingReview > 0"
+        class="card p-4 border-l-4 border-amber-400 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-slate-700">
+          <span class="font-semibold text-amber-700">{{ pendingReview }} berita</span> menunggu review sebelum tayang.
+        </p>
+        <button @click="status = 'review'; applyFilter()"
+          class="text-sm font-semibold px-4 py-2 rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors">
+          Lihat Antrean
+        </button>
+      </div>
+
       <!-- Search & Filters -->
       <div class="card p-4">
         <form @submit.prevent="applyFilter" class="grid sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
@@ -97,6 +117,7 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'num
           <div class="lg:col-span-3">
             <select v-model="status" @change="applyFilter" class="form-input text-sm">
               <option value="">Semua Status</option>
+              <option value="review">Menunggu Review</option>
               <option value="published">Tayang (Published)</option>
               <option value="draft">Draft</option>
               <option value="scheduled">Terjadwal (Scheduled)</option>
@@ -134,6 +155,7 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'num
             <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
               <tr>
                 <th class="p-4">Judul</th>
+                <th class="p-4">Penulis</th>
                 <th class="p-4">Kategori</th>
                 <th class="p-4">Status</th>
                 <th class="p-4">SEO Score</th>
@@ -144,6 +166,7 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'num
             <tbody class="divide-y divide-slate-100">
               <tr v-for="p in posts.data" :key="p.id" class="hover:bg-slate-50/50">
                 <td class="p-4 font-semibold text-slate-800 max-w-xs truncate">{{ p.title }}</td>
+                <td class="p-4 text-xs text-slate-600 whitespace-nowrap">{{ p.user?.name || 'Administrator' }}</td>
                 <td class="p-4">
                   <span v-if="p.category" class="badge text-xs" :style="`background:${p.category.color}20;color:${p.category.color}`">{{ p.category.name }}</span>
                 </td>
@@ -151,6 +174,7 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'num
                   <span :class="[
                     'badge text-xs capitalize',
                     p.status === 'published' ? 'bg-navy text-accent' :
+                    p.status === 'review' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
                     p.status === 'scheduled' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
                     p.status === 'archived' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
                     'bg-ice text-label border border-line'
@@ -162,13 +186,15 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'num
                 <td class="p-4 text-xs text-slate-500">
                   👁 {{ p.views_count }} · 👍 {{ p.likes_count }} · 💬 {{ p.comments_count }}
                 </td>
-                <td class="p-4 text-right space-x-2">
+                <td class="p-4 text-right space-x-2 whitespace-nowrap">
+                  <button v-if="canReview && p.status === 'review'" @click="approvePost(p)"
+                    class="text-green-700 hover:underline font-semibold">Setujui</button>
                   <Link :href="`/admin/berita/${p.id}/edit`" class="text-blue-600 hover:underline font-medium">Edit</Link>
                   <button @click="deletePost(p.id)" class="text-red-600 hover:underline font-medium">Hapus</button>
                 </td>
               </tr>
               <tr v-if="!posts.data?.length">
-                <td colspan="6" class="p-8 text-center text-slate-400">Belum ada berita</td>
+                <td colspan="7" class="p-8 text-center text-slate-400">Belum ada berita</td>
               </tr>
             </tbody>
           </table>

@@ -36,7 +36,11 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'role' => $request->user()->role,
+                    'roleLabel' => $request->user()->roleLabel(),
                     'avatar' => $request->user()->avatar,
+                    'position' => $request->user()->position,
+                    'canReview' => $request->user()->canReview(),
+                    'isAdmin' => $request->user()->isAdmin(),
                     'home' => $request->user()->homeUrl(),
                 ] : null,
             ],
@@ -47,7 +51,7 @@ class HandleInertiaRequests extends Middleware
                     ->pluck('value', 'key')->toArray();
             }),
             // Indikator keamanan untuk lencana menu admin (dihitung maks. sekali per menit).
-            'security' => $request->user() && in_array($request->user()->role, ['admin', 'editor'], true)
+            'security' => $request->user() && in_array($request->user()->role, ['admin', 'editor', 'author'], true)
                 ? cache()->remember('security_badge', 60, fn () => [
                     'failed_24h' => \App\Models\ActivityLog::where('action', 'login_failed')
                         ->where('created_at', '>=', now()->subDay())->count(),

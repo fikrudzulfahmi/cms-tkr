@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\CommentController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\ActivityController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SitemapController;
@@ -56,6 +58,7 @@ Route::prefix('admin')->name('admin.')->middleware(['activity.log', 'auth', 'adm
     Route::put('/berita/{post}', [PostController::class, 'update'])->name('posts.update');
     Route::delete('/berita/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
     Route::post('/berita/seo-analyze', [PostController::class, 'seoAnalyze'])->name('posts.seo');
+    Route::patch('/berita/{post}/setujui', [PostController::class, 'approve'])->name('posts.approve');
     Route::get('/berita/{post}/analytics', [PostController::class, 'analytics'])->name('posts.analytics');
 
     // Comments
@@ -68,8 +71,21 @@ Route::prefix('admin')->name('admin.')->middleware(['activity.log', 'auth', 'adm
     // Upload gambar editor (dipakai RichEditor) — editor juga butuh, jadi di luar grup role:admin.
     Route::post('/pengaturan/upload', [SettingController::class, 'uploadImage'])->name('settings.upload')->middleware('throttle:20,1');
 
+    // Akun sendiri (semua role CMS: admin, editor, penulis).
+    Route::get('/akun', [AccountController::class, 'edit'])->name('account.edit');
+    Route::post('/akun', [AccountController::class, 'update'])->name('account.update');
+    Route::post('/akun/password', [AccountController::class, 'updatePassword'])->name('account.password');
+
     // ===== Khusus admin (editor tidak boleh) =====
     Route::middleware('role:admin')->group(function () {
+
+    // Akun pengguna CMS
+    Route::get('/pengguna', [UserController::class, 'index'])->name('users.index');
+    Route::post('/pengguna', [UserController::class, 'store'])->name('users.store');
+    Route::put('/pengguna/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::patch('/pengguna/{user}/aktif', [UserController::class, 'toggle'])->name('users.toggle');
+    Route::put('/pengguna/{user}/password', [UserController::class, 'resetPassword'])->name('users.password');
+    Route::delete('/pengguna/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     // Reports
     Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
